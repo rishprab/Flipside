@@ -1,0 +1,1598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Flipside</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg0: #160d1f; --bg1: #22162e; --bg2: #3b2850; --felt: #2e1f3d; --ink: #f6efe6; --muted: #b9a9c9; --line: #4a3760;
+    --acc: #ffb547; --acc2: #e8952a; --good: #5fd38d; --bad: #ff6b6b; --turn: #7fd3ff;
+    --cw: 92px; /* hand card width */
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; }
+  body { background: radial-gradient(ellipse at 50% 30%, var(--bg2) 0%, var(--bg1) 55%, var(--bg0) 100%) fixed; color: var(--ink); font-family: Outfit, system-ui, sans-serif; overflow-x: hidden; }
+  button { font-family: inherit; cursor: pointer; }
+  .hidden { display: none !important; }
+  .view { min-height: 100vh; min-height: 100dvh; }
+  h1.logo { font-family: Fredoka, sans-serif; font-weight: 700; letter-spacing: 4px; color: var(--acc); margin: 0; font-size: 2.8rem; text-align: center; }
+  h1.logo .fl { display: inline-block; transform: rotate(180deg); }
+  .tag { text-align: center; color: var(--muted); font-weight: 600; margin: 6px 0 22px; }
+  .wrap { max-width: 460px; margin: 0 auto; padding: 28px 18px 40px; }
+  .card-ui { background: rgba(255,255,255,0.06); border: 1px solid var(--line); border-radius: 18px; padding: 18px; }
+  label.lbl, span.lbl { display: block; font-size: 0.8rem; font-weight: 700; color: var(--muted); margin: 0 0 6px; }
+  input.text { width: 100%; font-size: 1.05rem; padding: 13px 14px; border-radius: 12px; border: 2px solid var(--line); background: rgba(0,0,0,0.25); color: var(--ink); font-family: inherit; font-weight: 700; outline: none; }
+  input.text:focus { border-color: var(--acc); }
+  .btn { display: block; width: 100%; border: 0; border-radius: 14px; padding: 15px; font-size: 1.05rem; font-weight: 800; background: linear-gradient(135deg, var(--acc), var(--acc2)); color: #2a1a08; }
+  .btn:disabled { background: #43334f; color: #9a8aab; border-color: transparent; cursor: default; }
+  .btn.ghost:disabled { background: transparent; border-color: var(--line); color: #7d6d8e; }
+  .btn.ghost { background: transparent; color: var(--ink); border: 2px solid var(--line); }
+  .btn.small { display: inline-block; width: auto; padding: 9px 14px; font-size: 0.9rem; }
+  .btn.red { background: transparent; border: 2px solid var(--bad); color: var(--bad); }
+  .row { display: flex; gap: 10px; align-items: center; }
+  .stack { display: flex; flex-direction: column; gap: 12px; }
+  .err { color: var(--bad); font-weight: 700; min-height: 1.2em; text-align: center; }
+  .swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+  .sw { width: 34px; height: 34px; border-radius: 50%; border: 3px solid transparent; }
+  .sw.sel { border-color: #fff; box-shadow: 0 0 0 2px var(--acc); }
+  .av { border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; color: #22162e; flex: 0 0 auto; border: 2px solid rgba(255,255,255,0.85); }
+  #toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 140%); visibility: hidden; background: #2b1d3b; border: 1px solid var(--acc); color: var(--ink); padding: 10px 16px; border-radius: 12px; font-weight: 700; z-index: 100; transition: transform 0.3s; max-width: 90vw; text-align: center; }
+  #toast.show { transform: translate(-50%, 0); visibility: visible; }
+  .linkbtn { background: none; border: 0; color: var(--acc); font-weight: 800; font-size: 1rem; }
+
+  /* lobby */
+  .code { font-family: Fredoka, sans-serif; font-size: 3rem; font-weight: 700; letter-spacing: 8px; color: var(--acc); text-align: center; }
+  .qr { background: #fff; padding: 8px; border-radius: 12px; width: 152px; height: 152px; margin: 0 auto; }
+  .plist { display: flex; flex-direction: column; gap: 8px; }
+  .prow { display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.2); border-radius: 12px; padding: 8px 10px; font-weight: 800; }
+  .prow .host { margin-left: auto; font-size: 0.72rem; letter-spacing: 1px; color: var(--acc); }
+  .toggle { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+  .toggle input { width: 22px; height: 22px; accent-color: var(--acc); }
+  .sel { background: rgba(0,0,0,0.3); color: var(--ink); border: 2px solid var(--line); border-radius: 10px; padding: 7px 10px; font: inherit; font-weight: 700; font-size: 0.95em; }
+  .setrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-weight: 700; }
+  .botb { display: inline-block; font-size: 0.6rem; font-weight: 800; letter-spacing: 1px; color: #22162e; background: #b9a9c9; border-radius: 5px; padding: 0 4px; vertical-align: 2px; margin-left: 4px; }
+  .xbtn { margin-left: auto; width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line); background: rgba(255,255,255,0.06); color: var(--ink); font-weight: 800; flex: 0 0 auto; }
+  .prow .host + .xbtn { margin-left: 8px; }
+
+  /* cards */
+  .fc { position: relative; width: var(--w, 60px); aspect-ratio: 2 / 3; border-radius: 9% / 6%; overflow: hidden; background: #111; box-shadow: 0 5px 12px rgba(0,0,0,0.45), inset 0 0 0 1.5px rgba(255,255,255,0.25); flex: 0 0 auto; }
+  .fc svg { display: block; width: 100%; height: 100%; }
+  .fc.back { background: repeating-linear-gradient(45deg, #5b3f7a 0 5px, #4a3166 5px 10px); box-shadow: inset 0 0 0 2px rgba(246,239,230,0.65), 0 3px 8px rgba(0,0,0,0.45); }
+  .fc.back::after { content: "F"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 700 calc(var(--w, 60px) * 0.42) Fredoka, sans-serif; color: rgba(255,181,71,0.85); }
+  #fx { position: fixed; inset: 0; pointer-events: none; z-index: 55; }
+  #fx .fc { position: fixed; margin: 0; }
+  #fx .lbl2 { position: fixed; transform: translateX(-50%); background: #fff; color: #111; font: 700 15px Fredoka, sans-serif; padding: 2px 10px; border-radius: 999px; white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
+  #fx .ban { position: fixed; transform: translate(-50%, -50%); text-align: center; font: 700 30px/1.1 Fredoka, sans-serif; color: var(--acc); text-shadow: 0 3px 0 #2a1a08, 0 0 20px rgba(0,0,0,0.6); white-space: nowrap; }
+  #fx .bit { position: fixed; width: 7px; height: 11px; border-radius: 2px; }
+  #fx .ltr { position: fixed; width: 34px; height: 34px; border-radius: 50%; background: var(--acc); color: #2a1a08; font: 700 20px/34px Fredoka, sans-serif; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+  #fx .float { position: fixed; font: 700 16px Fredoka, sans-serif; color: var(--acc); transform: translateX(-50%); }
+  #fx .puff { position: fixed; border-radius: 50%; background: radial-gradient(rgba(255,255,255,0.6), rgba(255,255,255,0) 70%); }
+  .tok { display: inline-block; width: 1.5em; height: 1.5em; border-radius: 50%; background: rgba(255,255,255,0.1); font: 700 0.85em/1.5em Fredoka, sans-serif; color: rgba(255,255,255,0.3); text-align: center; }
+  .tok.got { background: var(--acc); color: #2a1a08; }
+  .toks { display: inline-flex; gap: 3px; }
+
+  /* game (phone) */
+  #vGame { display: flex; flex-direction: column; max-width: 560px; margin: 0 auto; padding: max(6px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom)); height: 100vh; height: 100dvh; overflow: hidden; }
+  #vGame > * { flex-shrink: 0; }
+  html.ingame, html.ingame body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+  .topbar { display: flex; align-items: center; gap: 6px; padding: 4px 2px 6px; }
+  .topbar .t1 { font-family: Fredoka, sans-serif; font-weight: 700; color: var(--acc); letter-spacing: 1px; font-size: 1.15rem; }
+  .topbar .t2 { color: var(--muted); font-weight: 700; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .topbar .sp { flex: 1; }
+  .pill { background: rgba(255,255,255,0.06); border: 1px solid var(--line); border-radius: 20px; padding: 6px 11px; font-weight: 800; font-size: 0.85rem; color: var(--ink); }
+  .pill.acc { background: var(--acc); border-color: var(--acc); color: #2a1a08; }
+  .opps { display: flex; gap: 5px; }
+  .opp { flex: 1 1 0; min-width: 0; position: relative; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 3px 6px; border-radius: 14px; background: rgba(255,255,255,0.06); border: 2px solid transparent; transition: border-color 0.3s, background 0.3s; }
+  .opp.turn { border-color: var(--turn); background: rgba(127,211,255,0.1); }
+  .opp.isout { opacity: 0.85; }
+  .opp.tap { cursor: pointer; }
+  .opp .nm { font-weight: 800; font-size: 0.85rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
+  .opp .dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+  .opp .ct { color: var(--muted); font-size: 0.75rem; font-weight: 700; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
+  .opp .ct .mini { display: inline-block; width: 9px; height: 13px; border-radius: 2px; background: repeating-linear-gradient(45deg, #5b3f7a 0 3px, #4a3166 3px 6px); box-shadow: inset 0 0 0 1px rgba(246,239,230,0.6); }
+  .opp .outb { color: var(--acc); font-weight: 800; font-size: 0.75rem; }
+  .opp .off { position: absolute; top: -6px; right: -2px; font-size: 0.58rem; background: #7a2a2a; color: #fff; border-radius: 6px; padding: 1px 4px; font-weight: 800; }
+  .oset { display: flex; justify-content: center; min-height: 52px; align-items: flex-end; margin-top: 3px; }
+  .oset .fc { --w: 34px; margin-left: -16px; border-radius: 4px; }
+  .oset .fc:first-child { margin-left: 0; }
+  .opp.tap .oset { animation: setglow 1.8s ease-in-out infinite; }
+  @keyframes setglow { 50% { filter: drop-shadow(0 0 6px var(--acc)); } }
+  .fc.prot { box-shadow: 0 0 0 2px var(--acc), 0 0 12px var(--acc); }
+  .tleft { font-weight: 800; font-size: 0.72rem; color: #22162e; background: var(--turn); border-radius: 10px; padding: 1px 7px; white-space: nowrap; }
+  .tleft:empty { display: none; }
+  .tleft.low { background: var(--bad); }
+  .arena { position: relative; flex: 1 1 auto !important; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; margin: 6px 0 2px; border-radius: 22px; background: radial-gradient(ellipse, rgba(255,181,71,0.06), rgba(0,0,0,0) 70%); border: 1px solid rgba(255,181,71,0.12); }
+  .status { text-align: center; font-weight: 800; font-size: 1rem; min-height: 1.4em; padding: 0 12px; }
+  .status.mine { color: var(--acc); }
+  .pile { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 40px; }
+  .pile .stackp { position: relative; width: 40px; height: 60px; }
+  .pile .stackp .fc { --w: 40px; position: absolute; left: 0; top: 0; }
+  .pile .stackp .fc:nth-child(2) { transform: rotate(-6deg); } .pile .stackp .fc:nth-child(3) { transform: rotate(5deg); }
+  .pile .pn { display: block; text-align: center; font-size: 0.7rem; color: var(--muted); font-weight: 700; margin-top: 4px; white-space: nowrap; }
+  .pile.empty .stackp { opacity: 0.25; }
+  .myset { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .myset .set { display: flex; min-height: 60px; }
+  .myset .set .fc { --w: 50px; margin-left: -20px; }
+  .myset .set .fc:first-child { margin-left: 0; }
+  .myset .mylab { font-size: 0.75rem; color: var(--muted); font-weight: 700; min-height: 1em; }
+  .ladder { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; padding: 0 8px; min-height: 22px; }
+  .ladder span { border: 1px solid var(--line); border-radius: 8px; padding: 1px 7px; font-size: 0.72rem; font-weight: 700; color: var(--muted); white-space: nowrap; }
+  .ladder span b { color: var(--ink); }
+  .hurry { position: absolute; right: 12px; top: 8px; font-size: 0.7rem; font-weight: 800; color: var(--muted); opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .hurry.on { opacity: 1; }
+  .verdict { height: 26px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.82rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); padding: 0 6px; }
+  .verdict.good { color: var(--good); } .verdict.bad { color: var(--bad); }
+  .handwrap { position: relative; isolation: isolate; touch-action: none; user-select: none; -webkit-user-select: none; outline: none; }
+  .handwrap:focus-visible { box-shadow: inset 0 0 0 2px var(--acc); border-radius: 14px; }
+  .hand { position: relative; height: calc(var(--cw) * 1.5 + 8px); }
+  .hcard { position: absolute; left: 0; bottom: 2px; padding: 0; pointer-events: none; border: 0; background: none; transform-origin: 50% 100%; will-change: transform; }
+  .hcard .fc { --w: var(--cw); transition: filter 0.2s, box-shadow 0.2s, opacity 0.2s; }
+  .hcard.dim .fc { filter: brightness(0.5) saturate(0.6); }
+  .hcard.sel .fc { box-shadow: 0 0 0 3px var(--acc), 0 10px 22px rgba(0,0,0,0.6); }
+  .runs { position: relative; height: 26px; }
+  .run { position: absolute; top: 0; height: 24px; border: 0; border-top: 3px solid #6a5583; border-radius: 3px; background: none; color: var(--muted); font: 700 12px/20px Outfit, sans-serif; padding: 0; text-align: center; }
+  .run.on { border-top-color: var(--acc); color: var(--acc); }
+  .playbar { display: grid; grid-template-columns: 1fr 1.7fr; gap: 8px; }
+  .playbar .btn { padding: 0 10px; height: 50px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .playbar .btn.ghost.arm { border-color: var(--acc); color: var(--acc); }
+  .outmsg { text-align: center; color: var(--acc); font-weight: 800; padding: 30px 0; }
+  .cog { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: rgba(255,255,255,0.06); color: var(--ink); font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; padding: 0; flex: 0 0 auto; }
+  .cog.home { position: absolute; left: 14px; top: 14px; }
+  .feelrow { display: grid; grid-template-columns: 6.5em 1fr 3.4em; gap: 10px; align-items: center; font-weight: 700; margin: 10px 0; }
+  .feelrow input { width: 100%; accent-color: var(--acc); }
+  .feelrow output { color: var(--acc); font-weight: 800; text-align: right; }
+  .hapsw { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  body.tvmode .ladder { display: none; }
+
+  /* sheets */
+  .sheet { position: fixed; inset: 0; z-index: 60; background: rgba(12,6,18,0.8); display: flex; align-items: flex-end; justify-content: center; padding: 12px; animation: fade 0.2s both; }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  .sheet.mid { align-items: center; }
+  .sheet .box { width: min(100%, 460px); max-height: 92vh; overflow-y: auto; background: linear-gradient(180deg, #34224a, #22162e); border: 1px solid var(--line); border-radius: 22px; padding: 18px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); animation: up 0.25s cubic-bezier(.2,1,.4,1) both; }
+  @keyframes up { from { transform: translateY(40px); } }
+  .sheet h2 { font-family: Fredoka, sans-serif; color: var(--acc); margin: 0 0 4px; text-align: center; font-weight: 600; }
+  .sheet .sub { text-align: center; color: var(--muted); font-weight: 600; margin-bottom: 14px; }
+  .opt { display: block; width: 100%; text-align: left; padding: 11px 14px; border-radius: 14px; border: 2px solid var(--line); background: rgba(255,255,255,0.05); color: var(--ink); font-weight: 800; font-size: 1rem; margin-bottom: 8px; }
+  .opt small { display: block; font-weight: 600; color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
+  .opt.go { border-color: var(--acc); }
+  .opt:disabled { opacity: 0.5; cursor: default; }
+  .opt .rowc { display: flex; align-items: center; gap: 10px; }
+  .opt .rowc .fc { --w: 38px; border-radius: 4px; }
+  .srow { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 4px; border-bottom: 1px solid var(--line); font-weight: 800; }
+  .srow small { display: block; color: var(--muted); font-weight: 600; font-size: 0.8rem; }
+  .srow .toks { font-size: 15px; }
+  .srow.lead { background: rgba(255,181,71,0.1); border-radius: 10px; }
+  .tok.new { animation: tokpop 0.7s cubic-bezier(.3,1.6,.5,1) both; }
+  @keyframes tokpop { from { transform: scale(0) rotate(-180deg); } }
+  .rules { color: var(--ink); font-weight: 500; line-height: 1.5; }
+  .rules h3 { font-family: Fredoka, sans-serif; color: var(--acc); margin: 14px 0 4px; font-weight: 600; }
+  .rules p { margin: 4px 0; } .rules ul { margin: 4px 0; padding-left: 20px; }
+  .confetti { position: fixed; top: -10px; width: 8px; height: 14px; z-index: 80; pointer-events: none; animation: fall linear forwards; }
+  @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+
+  /* TV */
+  body.tv { overflow: hidden; }
+  #vTVLobby, #vTVGame { position: fixed; inset: 0; }
+  #vTVGame { display: flex; flex-direction: column; }
+  .tvlobby { position: relative; z-index: 1; height: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 4vw; align-items: center; padding: 4vh 6vw; }
+  .tvl-left { display: flex; flex-direction: column; align-items: center; gap: 1.6vh; }
+  .tvlogo { font-size: clamp(40px, 5.5vw, 100px); }
+  .qr.big { width: auto; height: auto; padding: 14px; }
+  .tvcode { font-size: clamp(48px, 6vw, 110px); }
+  .tvurl { color: var(--muted); font-weight: 700; font-size: clamp(14px, 1.3vw, 22px); }
+  .tvl-right { display: flex; flex-direction: column; gap: 2vh; font-size: clamp(14px, 1.3vw, 22px); }
+  .tvplist { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2vh 1vw; min-height: 26vh; align-content: start; }
+  .tvp { display: flex; align-items: center; gap: 0.8vw; background: rgba(0,0,0,0.25); border-radius: 14px; padding: 1vh 1vw; font-weight: 800; font-size: 1.1em; }
+  .tvp .host { margin-left: auto; font-size: 0.65em; color: var(--acc); }
+  .tvempty { color: var(--muted); font-weight: 700; grid-column: 1 / -1; }
+  .tvmute { position: absolute; right: 2vw; top: 2vh; z-index: 3; }
+  .tvtop { position: relative; z-index: 2; display: flex; align-items: center; gap: 1.2vw; padding: 1.4vh 2vw; font-size: clamp(14px, 1.4vw, 24px); }
+  .tvtop .t1 { font-family: Fredoka, sans-serif; font-weight: 700; color: var(--acc); letter-spacing: 0.15em; font-size: 1.3em; }
+  .tvtop .t2 { color: var(--muted); font-weight: 700; }
+  .tvtop .t2 b { color: var(--acc); letter-spacing: 2px; }
+  .tvtop .sp { flex: 1; }
+  .tvtable { position: relative; flex: 1; min-height: 0; margin: 0 2vw 2vh; }
+  .tvtable .oval { position: absolute; left: 12%; right: 12%; top: 16%; bottom: 16%; border-radius: 50%; border: 2px solid rgba(255,181,71,0.15); background: radial-gradient(ellipse, rgba(59,40,80,0.8), rgba(30,18,42,0.5) 70%); box-shadow: inset 0 0 80px rgba(0,0,0,0.5); }
+  .tvcenter { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 1.6vh; width: 46%; }
+  .tvcenter .status { font-size: clamp(18px, 2.2vw, 40px); font-family: Fredoka, sans-serif; font-weight: 600; }
+  .tvcenter .say { color: var(--muted); font-weight: 700; font-size: clamp(13px, 1.2vw, 22px); min-height: 1.4em; text-align: center; }
+  .tvcenter .ladder span { font-size: clamp(12px, 1vw, 18px); padding: 0.2em 0.7em; }
+  .tvcenter .pile { position: relative; left: auto; top: auto; transform: none; width: auto; }
+  .tvcenter .pile .stackp { width: clamp(40px, 4vw, 70px); height: calc(clamp(40px, 4vw, 70px) * 1.5); }
+  .tvcenter .pile .stackp .fc { --w: clamp(40px, 4vw, 70px); }
+  .tvcenter .pile .pn { font-size: clamp(11px, 0.9vw, 16px); }
+  .seat { position: absolute; z-index: 3; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 0.6vh; padding: 1vh 1vw; border-radius: 18px; background: rgba(34,22,46,0.88); border: 2px solid var(--line); min-width: 12vw; font-size: clamp(11px, 1vw, 19px); transition: border-color 0.3s, box-shadow 0.3s; }
+  .seat.turn { border-color: var(--turn); box-shadow: 0 0 30px rgba(127,211,255,0.35); }
+  .seat .nm { font-weight: 800; font-size: 1.25em; white-space: nowrap; display: flex; align-items: center; gap: 0.4em; }
+  .seat .meta { color: var(--muted); font-weight: 700; white-space: nowrap; }
+  .seat .toks { font-size: 1.05em; }
+  .seat .tset { display: flex; min-height: calc(clamp(34px, 4.6vw, 86px) * 1.5); align-items: center; }
+  .seat .tset .fc { --w: clamp(34px, 4.6vw, 86px); margin-left: calc(clamp(34px, 4.6vw, 86px) * -0.45); }
+  .seat .tset .fc:first-child { margin-left: 0; }
+  .seat .tset .none { color: var(--muted); font-size: 0.85em; }
+  .seat .off { position: absolute; top: -8px; right: -6px; font-size: 0.65em; background: #7a2a2a; color: #fff; border-radius: 6px; padding: 1px 4px; font-weight: 800; }
+  .seat .outb { color: var(--acc); font-weight: 800; }
+  .tvov { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: rgba(12,6,18,0.82); animation: fade 0.3s both; }
+  .tvbox { width: min(92vw, 1100px); text-align: center; }
+  .tvbox h2 { font-family: Fredoka, sans-serif; color: var(--acc); font-size: clamp(28px, 3.4vw, 60px); margin: 0 0 1vh; }
+  .tvbox .sub { color: var(--muted); font-weight: 700; font-size: clamp(14px, 1.4vw, 24px); }
+  .tvrows { display: flex; flex-direction: column; gap: 1.4vh; margin: 4vh auto 2vh; width: min(70vw, 760px); font-size: clamp(16px, 1.6vw, 30px); }
+  .tvrow { display: flex; align-items: center; gap: 1vw; background: rgba(255,255,255,0.06); border-radius: 16px; padding: 1.2vh 1.4vw; font-weight: 800; }
+  .tvrow .sp { flex: 1; text-align: left; }
+  .tvrow small { color: var(--muted); font-weight: 600; margin-left: 0.6em; }
+  .tvnext { color: var(--muted); font-weight: 800; font-size: clamp(14px, 1.4vw, 24px); margin-top: 1vh; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
+  @media (max-height: 760px), (max-width: 360px) { :root { --cw: 80px; } }
+  @media (max-height: 700px) { :root { --cw: 76px; } }
+  .opps:has(.opp:nth-child(4)) .botb { display: none; }
+  @media (max-height: 620px) { :root { --cw: 60px; } .oset { min-height: 44px; } .oset .fc { --w: 28px; margin-left: -13px; } .myset .set .fc { --w: 40px; } .myset .set { min-height: 48px; } }
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div class="view" id="vHome" style="position: relative">
+  <button class="cog home" onclick="openFeel()" aria-label="Test mode: hand feel settings">⚙</button>
+  <div class="wrap">
+    <h1 class="logo">FLIP<span class="fl">S</span>IDE</h1>
+    <div class="tag">A card game of sets, swaps and flips for 3–5 players</div>
+    <div class="card-ui stack">
+      <div id="rejoinBox" class="hidden"></div>
+      <div><label class="lbl" for="nameIn">Your name</label><input class="text" id="nameIn" maxlength="14" placeholder="e.g. Risheek" autocomplete="off"></div>
+      <div><span class="lbl">Your colour</span><div class="swatches" id="swatches"></div></div>
+      <button class="btn" id="createBtn">Create a game</button>
+      <div class="row">
+        <input class="text" id="codeIn" maxlength="4" placeholder="CODE" style="text-transform: uppercase; letter-spacing: 4px; text-align: center; font-family: Fredoka, sans-serif" autocomplete="off" aria-label="Room code">
+        <button class="btn ghost" id="joinBtn" style="width: 46%">Join</button>
+      </div>
+      <button class="btn ghost" id="tvBtn">Use this screen as the table (TV)</button>
+      <div style="color: var(--muted); font-weight: 600; text-align: center; font-size: 0.82rem; margin-top: -4px">For a TV or laptop everyone can see. It shows the table; everyone plays on their phones.</div>
+      <div class="err" id="homeErr"></div>
+    </div>
+    <p style="text-align: center; margin-top: 18px"><button class="linkbtn" onclick="openRules()">How to play</button></p>
+  </div>
+</div>
+
+<!-- LOBBY -->
+<div class="view hidden" id="vLobby">
+  <div class="wrap stack">
+    <h1 class="logo" style="font-size: 2rem">FLIP<span class="fl">S</span>IDE</h1>
+    <div class="card-ui stack" style="align-items: center">
+      <span class="lbl" style="margin: 0">Room code</span>
+      <div class="code" id="lobbyCode">----</div>
+      <div class="qr" id="qr"></div>
+      <div style="color: var(--muted); font-weight: 600; text-align: center; font-size: 0.9rem">Scan, or open the game and enter the code</div>
+    </div>
+    <div class="card-ui stack"><span class="lbl" style="margin: 0" id="lobbyCount">Players</span><div class="plist" id="lobbyList"></div></div>
+    <div class="card-ui stack" id="hostBox">
+      <label class="toggle"><input type="checkbox" id="optLadder" checked> Show the best set of each size</label>
+      <div class="setrow"><label for="optTimer">Turn timer</label><select class="sel" id="optTimer"><option value="0">Off</option><option value="30">30 seconds</option><option value="60">60 seconds</option></select></div>
+      <div class="setrow"><button class="btn ghost small" id="addBotBtn">+ Add computer player</button><select class="sel" id="optBots" aria-label="Computer skill"><option value="easy">Relaxed</option><option value="hard">Sharp</option></select></div>
+      <button class="btn" id="startBtn">Deal the cards</button>
+      <div style="color: var(--muted); font-weight: 600; text-align: center; font-size: 0.85rem" id="startHint"></div>
+    </div>
+    <div class="card-ui" id="guestBox" style="text-align: center; font-weight: 800; color: var(--muted)">Waiting for the host to deal…</div>
+    <button class="btn ghost" id="leaveBtn">Leave</button>
+  </div>
+</div>
+
+<!-- GAME -->
+<div class="view hidden" id="vGame">
+  <div class="topbar">
+    <button class="cog hidden" id="cogBtn" onclick="openFeel()" aria-label="Test mode: hand feel settings">⚙</button>
+    <span class="t1">FLIPSIDE</span><span class="t2" id="gRound"></span><span class="sp"></span>
+    <span class="tleft" id="tleftTop"></span>
+    <button class="pill mutebtn short" onclick="toggleMute()">🔊</button>
+    <button class="pill acc" id="scoresBtn">Score</button>
+  </div>
+  <div class="opps" id="opps"></div>
+  <div class="arena" id="arena">
+    <div class="status" id="status"></div>
+    <div class="pile" id="pile"><div class="stackp"><div class="fc back"></div><div class="fc back"></div><div class="fc back"></div></div><span class="pn" id="pileN"></span></div>
+    <div class="myset"><div class="set" id="mySet"></div><span class="mylab" id="myLab"></span></div>
+    <div class="ladder" id="ladder"></div>
+    <span class="hurry" id="hurry">Tap to hurry</span>
+  </div>
+  <div class="verdict" id="verdict"></div>
+  <div class="handwrap" id="handZone" tabindex="0" aria-label="Your hand. Slide along it to browse; lift to pick a card. Arrow keys move, Space picks, Enter plays."><div class="hand" id="hand"></div></div>
+  <div class="runs" id="runs"></div>
+  <div class="playbar"><button class="btn ghost" id="flipBtn">Flip hand</button><button class="btn" id="playBtn" disabled>Play</button></div>
+</div>
+
+<!-- TV LOBBY -->
+<div class="view hidden" id="vTVLobby">
+  <button class="pill mutebtn tvmute" onclick="toggleMute()">Sound on</button>
+  <div class="tvlobby">
+    <div class="tvl-left">
+      <h1 class="logo tvlogo">FLIP<span class="fl">S</span>IDE</h1>
+      <div class="tvurl">Scan to join on your phone</div>
+      <div class="qr big" id="tvQr"></div>
+      <div class="tvurl" id="tvUrl"></div>
+      <span class="lbl" style="margin: 1vh 0 0">Room code</span>
+      <div class="code tvcode" id="tvCode">----</div>
+    </div>
+    <div class="tvl-right card-ui">
+      <span class="lbl" style="margin: 0" id="tvCount">Players</span>
+      <div class="tvplist" id="tvPlist"></div>
+      <label class="toggle"><input type="checkbox" id="tvLadder" checked> Show the best set of each size</label>
+      <div class="setrow"><label for="tvTimer">Turn timer</label><select class="sel" id="tvTimer"><option value="0">Off</option><option value="30">30 seconds</option><option value="60">60 seconds</option></select></div>
+      <div class="setrow"><button class="btn ghost small" id="tvAddBot">+ Add computer player</button><select class="sel" id="tvBots" aria-label="Computer skill"><option value="easy">Relaxed computers</option><option value="hard">Sharp computers</option></select></div>
+      <button class="btn" id="tvStart">Deal the cards</button>
+      <div style="color: var(--muted); font-weight: 700; text-align: center" id="tvHint"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TV GAME -->
+<div class="view hidden" id="vTVGame">
+  <div class="tvtop"><span class="t1">FLIPSIDE</span><span class="t2" id="tvRound"></span><span class="sp"></span><span class="t2">Room <b id="tvCode2"></b></span><button class="pill mutebtn" onclick="toggleMute()">Sound on</button></div>
+  <div class="tvtable" id="tvTable">
+    <div class="oval"></div>
+    <div id="tvSeats"></div>
+    <div class="tvcenter" id="tvCenter">
+      <div class="status" id="tvStatus"></div>
+      <div class="say" id="tvSay"></div>
+      <div class="pile" id="tvPile"><div class="stackp"><div class="fc back"></div><div class="fc back"></div><div class="fc back"></div></div><span class="pn" id="tvPileN"></span></div>
+      <div class="ladder" id="tvLadder"></div>
+    </div>
+  </div>
+  <div id="tvOverlay"></div>
+</div>
+
+<div id="sheetHost"></div>
+<div id="fx"></div>
+<input type="checkbox" switch class="hapsw" id="hapSw" aria-hidden="true" tabindex="-1"><label for="hapSw" id="hapLab" class="hapsw" aria-hidden="true"></label>
+<div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+// ====== PASTE YOUR FIREBASE CONFIG HERE ======
+const firebaseConfig = {
+  apiKey: "AIzaSyDUhfqIOasyYJG6FiduscAuvMHKCXW2fC4",
+  authDomain: "flipside-50613.firebaseapp.com",
+  databaseURL: "https://flipside-50613-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "flipside-50613",
+  storageBucket: "flipside-50613.firebasestorage.app",
+  messagingSenderId: "281732142623",
+  appId: "1:281732142623:web:fe17a983fccf8c0f27a72a"
+};
+// ==============================================
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+const TS = firebase.database.ServerValue.TIMESTAMP;
+const ROOT = "rooms"; // this Firebase project is Flipside's own, so rooms sit at the top level
+const R = p => db.ref(`${ROOT}/${p}`);
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const arr = v => (Array.isArray(v) ? v : Object.values(v || {})).filter(x => x != null);
+const clone = o => JSON.parse(JSON.stringify(o || {}));
+function load(k) { try { const v = localStorage.getItem("flipside." + k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+function store(k, v) { try { localStorage.setItem("flipside." + k, JSON.stringify(v)); } catch (e) {} }
+let toastT = null;
+function toast(m) { const t = $("toast"); t.textContent = m; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2600); }
+let clockOffset = 0;
+db.ref(".info/serverTimeOffset").on("value", s => { clockOffset = s.val() || 0; });
+const serverNow = () => Date.now() + clockOffset;
+const reduceMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// ---------- the deck ----------
+const APP_VERSION = 1; // bump when uploading a new version; devices with an older cached copy are asked to refresh
+// [low, high, group]: group 0 = always in, 1 = joins at 3 players, 2 = joins at 4, 3 = joins at 5
+const DECK = [[1,10,1],[1,9,2],[1,8,2],[1,7,0],[1,6,0],[1,5,0],[2,4,0],[2,10,0],[1,9,0],[1,8,0],[1,7,0],[1,6,0],[2,5,0],[2,4,0],
+  [3,10,3],[2,9,0],[2,8,1],[2,7,2],[2,6,2],[2,5,0],[3,4,0],[3,9,0],[3,8,0],[3,7,0],[2,6,0],[3,5,2],[3,4,2],
+  [4,9,3],[4,8,0],[4,7,0],[3,6,1],[3,5,0],[5,8,0],[5,7,0],[3,6,0],[4,5,1],[5,8,3],[6,7,0],[4,6,0],[6,7,3]].map(([a, b, g], k) => ({ k, a, b, g }));
+const STAR_K = DECK.find(c => c.a === 1 && c.b === 5).k;
+const HUE = [, "#ef4b3f", "#f5872a", "#f6c42b", "#9ccc3c", "#35b86b", "#1fb7b0", "#3c8fe0", "#6f63d9", "#b558c9", "#f2679a"];
+// a card in play is a number: card index * 2, plus 1 if it's turned so its high number counts
+const val = e => (e & 1 ? DECK[e >> 1].b : DECK[e >> 1].a);
+const other = e => (e & 1 ? DECK[e >> 1].a : DECK[e >> 1].b);
+const deckFor = n => DECK.filter(c => c.g <= n - 2).map(c => c.k);
+const sortHand = h => h.slice().sort((x, y) => val(x) - val(y) || other(x) - other(y) || x - y);
+const MIN_P = 3, MAX_P = 5, WIN = 4, AUTO_MS = 20000, NEXT_MS = 15000;
+const COLORS = ["#FFB3A8", "#F0A24A", "#F2D16B", "#9FD08C", "#7FE0D8", "#8EC4F7", "#C3A6F5", "#F5A6D0"];
+const NUMW = ["", "single", "pair", "three", "four", "five", "six", "seven", "eight"];
+const setName = cs => cs.length === 1 ? `single ${val(cs[0])}` : cs.length === 2 ? `pair of ${val(cs[0])}s` : `${NUMW[cs.length] || cs.length} ${val(cs[0])}s`;
+
+// card art: Sun & Moon and Still Lake scenes, alternating through the deck
+const rgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16, n >> 8 & 255, n & 255]; };
+const mix = (h, b, p) => { const x = rgb(h), y = rgb(b); return `rgb(${x.map((v, i) => Math.round(v * p + y[i] * (1 - p))).join()})`; };
+const lighten = (h, p) => mix("#ffffff", h, p), darken = (h, p) => mix("#000000", h, p);
+function half(v, on, st, vr) {
+  const c = HUE[v]; let s = "";
+  if (st === "sun") {
+    if (on) {
+      s += `<rect width="100" height="75" fill="${lighten(c, 0.45)}"/><rect width="100" height="42" fill="${lighten(c, 0.78)}" opacity="0.8"/>`;
+      for (let i = 0; i < v; i++) { const a = Math.PI * (1 + (i + 0.5) / v); s += `<line x1="${58 + 17 * Math.cos(a)}" y1="${66 + 17 * Math.sin(a)}" x2="${58 + 28 * Math.cos(a)}" y2="${66 + 28 * Math.sin(a)}" stroke="${c}" stroke-width="3.6" stroke-linecap="round"/>`; }
+      s += `<circle cx="58" cy="66" r="13" fill="${c}"/><circle cx="54" cy="62" r="4.5" fill="#fff" opacity=".4"/>`;
+      if (vr === 0) s += `<path d="M0 75 Q25 58 50 70 T100 64 V75Z" fill="${darken(c, 0.25)}"/>`;
+      if (vr === 1) s += `<path d="M0 70 Q12 66 25 70 T50 70 T75 70 T100 70 V75H0Z" fill="${mix(c, "#2a7bbf", 0.35)}"/>`;
+      if (vr === 2) s += `<path d="M62 22 q4-4 8 0 q4-4 8 0 M72 32 q3-3 6 0 q3-3 6 0" stroke="${darken(c, 0.45)}" stroke-width="1.6" fill="none"/><path d="M0 75 L20 66 L40 72 L60 63 L80 70 L100 65 V75Z" fill="${darken(c, 0.3)}"/>`;
+    } else {
+      s += `<rect width="100" height="75" fill="#161937"/><rect y="38" width="100" height="37" fill="${mix(c, "#161937", 0.35)}" opacity="0.85"/>`;
+      for (let i = 0; i < v; i++) s += `<circle cx="${30 + ((i * 37) % 62)}" cy="${12 + ((i * 23) % 40)}" r="1.4" fill="#fff" opacity=".85"/>`;
+      s += `<circle cx="58" cy="62" r="10" fill="${lighten(c, 0.7)}"/><circle cx="63" cy="58" r="9" fill="${mix(c, "#161937", 0.3)}"/><path d="M0 75 Q25 66 50 72 T100 68 V75Z" fill="#0c0d20"/>`;
+    }
+  } else {
+    const n = Math.min(v, 5) + 1; let pts = "0,75 "; for (let i = 0; i <= n; i++) pts += `${i * 100 / n},${i % 2 ? 34 + ((v * 7 + i * 11) % 18) : 60} `; pts += "100,75";
+    if (on) {
+      s += `<rect width="100" height="75" fill="${lighten(c, 0.82)}"/><circle cx="80" cy="22" r="6" fill="#fff" opacity=".9"/><polygon points="${pts}" fill="${c}"/><polygon points="${pts}" fill="#000" opacity=".16" transform="translate(9,6)"/>`;
+      if (vr === 1) for (let i = 0; i < 4; i++) s += `<path d="M${50 + i * 12} 75 l5 -15 l5 15z" fill="${darken(c, 0.45)}"/>`;
+      if (vr === 2) s += `<rect x="34" y="56" width="5" height="19" fill="#fff"/><rect x="34" y="62" width="5" height="3" fill="${darken(c, 0.3)}"/><path d="M33 56h7l-3.5-5z" fill="${darken(c, 0.3)}"/>`;
+      s += `<rect y="73" width="100" height="2" fill="${darken(c, 0.3)}" opacity=".5"/>`;
+    } else {
+      s += `<rect width="100" height="75" fill="${mix(c, "#0f3346", 0.32)}"/><polygon points="${pts}" fill="${lighten(c, 0.25)}" opacity=".4"/>`;
+      for (let i = 0; i < 5; i++) s += `<line x1="${8 + i * 14}" x2="${36 + i * 14}" y1="${48 + i * 5}" y2="${48 + i * 5}" stroke="#fff" opacity=".2" stroke-width="1.4"/>`;
+    }
+  }
+  return s;
+}
+function corner(a, b, on) {
+  const ink = on ? "#24172e" : "#fff";
+  return `<text x="8" y="31" font-family="Fredoka,sans-serif" font-weight="700" font-size="${a > 9 ? 25 : 30}" fill="${ink}" stroke="${on ? "#fff" : "#0008"}" stroke-width="3" paint-order="stroke">${a}</text>
+   <g opacity="${on ? 1 : 0.75}"><rect x="7" y="36" width="${b > 9 ? 27 : 21}" height="14" rx="3.5" fill="#fff" stroke="#24172e" stroke-width=".8"/>
+   <path d="M10.4 43 a2.6 2.6 0 1 1 2.6 2.6" fill="none" stroke="#111" stroke-width="1.2"/><path d="M11.6 45.7 l2 -1.5 l.25 2.4z" fill="#111"/>
+   <text x="17" y="47.3" font-family="Fredoka,sans-serif" font-weight="700" font-size="12" fill="#111">${b}</text></g>`;
+}
+function mark(c) {
+  const star = c.k === STAR_K;
+  const one = x => { let s = `<circle cx="${x}" cy="75" r="${star ? 6.5 : 5.5}" fill="#fff" stroke="#24172e" stroke-width="1"/>`;
+    if (star) s += `<path d="M${x} 70.6 l1.3 2.8 3 .3 -2.3 2 .7 3 -2.7 -1.6 -2.7 1.6 .7 -3 -2.3 -2 3 -.3z" fill="${HUE[3]}" stroke="#24172e" stroke-width=".5"/>`;
+    else for (let i = 0; i < c.g; i++) s += `<circle cx="${x}" cy="${75 + (i - (c.g - 1) / 2) * 3.2}" r="1.25" fill="#24172e"/>`; return s; };
+  return (c.g || star) ? one(6) + one(94) : "";
+}
+const SVGC = {};
+function cardSVG(e) {
+  if (SVGC[e]) return SVGC[e];
+  const c = DECK[e >> 1], a = val(e), b = other(e), st = c.k % 2 ? "lake" : "sun", vr = Math.floor(c.k / 2) % 3;
+  return (SVGC[e] = `<svg viewBox="0 0 100 150" aria-hidden="true">${half(a, 1, st, vr)}<g transform="rotate(180 50 75)">${half(b, 0, st, vr)}${corner(b, a, 0)}</g>${corner(a, b, 1)}${mark(c)}</svg>`);
+}
+const cardHTML = (e, cls = "") => `<div class="fc ${cls}" data-k="${e >> 1}" role="img" aria-label="${val(e)} (turns into ${other(e)})">${cardSVG(e)}</div>`;
+const avatar = (p, size) => `<span class="av" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.4)}px;background:${p.color || "#8EC4F7"}">${esc((p.name || "?").slice(0, 2).toUpperCase())}</span>`;
+const toksHTML = (n, fresh = 0) => `<span class="toks">${[..."FLIP"].map((l, i) => `<span class="tok ${i < n ? "got" : ""} ${i < n && i >= n - fresh ? "new" : ""}" style="animation-delay:${(i - (n - fresh)) * 0.3 + 0.2}s">${l}</span>`).join("")}</span>`;
+
+// ---------- the rules ----------
+const setsOf = s => { const o = {}; Object.entries((s && s.sets) || {}).forEach(([k, v]) => { const a = arr(v); if (a.length) o[k] = a; }); return o; };
+// at most one set of each size is ever out; who else has a set this size?
+function clashFor(sets, m, except) { for (const o in sets) if (o !== except && sets[o].length === m) return o; return null; }
+function playCheck(sets, p, cs) {
+  if (!cs.length) return { ok: false, why: "Pick cards to build a set" };
+  const v = val(cs[0]); if (cs.some(e => val(e) !== v)) return { ok: false, why: "A set is cards of one number" };
+  const o = clashFor(sets, cs.length, p);
+  if (o && !(v > val(sets[o][0]))) return { ok: false, o, why: `Needs more than ${o === uid ? "your" : nameOf(o) + "'s"} ${val(sets[o][0])}s` };
+  return { ok: true, beats: o };
+}
+function addCheck(sets, out, p, e, q) {
+  if (q === p || !sets[q] || out.includes(q)) return { ok: false, why: "" };
+  if (val(e) !== val(sets[q][0])) return { ok: false, why: `Only a ${val(sets[q][0])} can join` };
+  const m = sets[q].length + 1, r = clashFor(sets, m, q);
+  if (r && !(val(e) > val(sets[r][0]))) return { ok: false, o: r, why: `It would make ${m} ${val(e)}s, which doesn't beat ${r === uid ? "your" : nameOf(r) + "'s"} ${m} ${val(sets[r][0])}s` };
+  return { ok: true, beats: r };
+}
+const canTake = (sets, out, p, q) => q !== p && !!sets[q] && !out.includes(q);
+
+// ---------- session ----------
+let uid = null, code = null, room = null, roomRef = null, isHost = false, isTV = false, myHand = [], handRef = null;
+let selColor = load("color") || COLORS[Math.floor(Math.random() * COLORS.length)];
+const qs = new URLSearchParams(location.search);
+$("nameIn").value = load("name") || "";
+if (qs.get("room")) $("codeIn").value = qs.get("room").toUpperCase();
+function drawSwatches() { $("swatches").innerHTML = COLORS.map(c => `<button class="sw ${c === selColor ? "sel" : ""}" style="background:${c}" aria-label="Colour ${c}" onclick="pickColor('${c}')"></button>`).join(""); }
+function pickColor(c) { selColor = c; store("color", c); drawSwatches(); }
+drawSwatches();
+function show(v) { document.documentElement.classList.toggle("ingame", v === "vGame"); ["vHome", "vLobby", "vGame", "vTVLobby", "vTVGame"].forEach(id => $(id).classList.toggle("hidden", id !== v)); }
+function myName() { const n = $("nameIn").value.trim(); if (!n) { $("homeErr").textContent = "Pop your name in first"; return null; } store("name", n); return n; }
+
+auth.onAuthStateChanged(u => { if (u) { uid = u.uid; checkRejoin(); } });
+auth.signInAnonymously().catch(e => { $("homeErr").textContent = "Connection error: " + e.message; });
+
+function checkRejoin() {
+  const last = load("last");
+  if (!last || !last.code) return;
+  let live = null; try { live = sessionStorage.getItem("flipside.live"); } catch (e) {}
+  const sameTab = qs.get("room") && qs.get("room").toUpperCase() === last.code && (qs.get("v") || live === last.code);
+  if (sameTab) return enterRoom(last.code);
+  Promise.all([R(`${last.code}/pub/players/${uid}`).once("value"), R(`${last.code}/pub/hostUid`).once("value"), R(`${last.code}/pub/state/phase`).once("value")]).then(([pl, hu, ph]) => {
+    const asTV = hu.val() === uid && !pl.exists();
+    if ((!pl.exists() && !asTV) || (pl.val() && pl.val().left)) { store("last", null); return; }
+    const playing = ph.val() && ph.val() !== "lobby";
+    $("rejoinBox").classList.remove("hidden");
+    $("rejoinBox").innerHTML = `<div style="background:rgba(255,181,71,0.12);border-radius:12px;padding:10px"><div style="font-weight:700;margin-bottom:8px">You were in game <b>${esc(last.code)}</b>${asTV ? " as the table screen" : ""}${playing ? ", and it's still going" : ""}.</div>
+      <div class="row"><button class="btn small" style="flex:1" onclick="enterRoom('${esc(last.code)}')">Rejoin</button><button class="btn ghost small" style="flex:1" onclick="leaveFromHome('${esc(last.code)}', ${hu.val() === uid})">Leave game</button></div>
+      ${hu.val() === uid && playing ? `<div style="color:var(--muted);font-size:0.8rem;font-weight:700;margin-top:6px">You started it, so leaving ends it for everyone.</div>` : playing ? `<div style="color:var(--muted);font-size:0.8rem;font-weight:700;margin-top:6px">If you leave, a computer plays your hand.</div>` : ""}</div>`;
+  });
+}
+async function newRoom(pub) {
+  const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  for (let tries = 0; tries < 8; tries++) {
+    const c = Array.from({ length: 4 }, () => letters[Math.floor(Math.random() * letters.length)]).join("");
+    const ex = await R(`${c}/pub/hostUid`).once("value");
+    if (ex.exists()) continue;
+    await R(`${c}/pub`).set(Object.assign({ hostUid: uid, ver: APP_VERSION, created: TS, state: { phase: "lobby", seq: 0, at: TS } }, pub));
+    return c;
+  }
+  return null;
+}
+$("createBtn").onclick = async () => {
+  const name = myName(); if (!name || !uid) return;
+  $("createBtn").disabled = true;
+  const c = await newRoom({ settings: { ladder: true }, players: { [uid]: { name, color: selColor, joinedAt: TS, online: true } } });
+  $("createBtn").disabled = false;
+  if (c) enterRoom(c); else $("homeErr").textContent = "Couldn't create a room, try again";
+};
+$("tvBtn").onclick = async () => {
+  if (!uid) return;
+  $("tvBtn").disabled = true; unlockAudio();
+  const c = await newRoom({ tv: true, settings: { ladder: true } });
+  $("tvBtn").disabled = false;
+  if (c) enterRoom(c); else $("homeErr").textContent = "Couldn't create a room, try again";
+};
+$("joinBtn").onclick = async () => {
+  const name = myName(); if (!name || !uid) return;
+  const c = $("codeIn").value.trim().toUpperCase();
+  if (c.length !== 4) { $("homeErr").textContent = "Room codes are 4 letters"; return; }
+  const s = await R(`${c}/pub`).once("value");
+  if (!s.exists()) { $("homeErr").textContent = "No game with that code"; return; }
+  const pub = s.val(), me = (pub.players || {})[uid];
+  if (!me && pub.state && pub.state.phase !== "lobby") { $("homeErr").textContent = "That game has already started"; return; }
+  if (!me && Object.keys(pub.players || {}).length >= MAX_P) { $("homeErr").textContent = `That game is full (${MAX_P} players)`; return; }
+  await R(`${c}/pub/players/${uid}`).update({ name, color: selColor, joinedAt: me ? me.joinedAt : TS, online: true, bot: null, left: null });
+  enterRoom(c);
+};
+
+let presenceRef = null, presenceCb = null;
+function enterRoom(c) {
+  code = c; store("last", { code: c }); try { sessionStorage.setItem("flipside.live", c); } catch (e) {}
+  $("rejoinBox").classList.add("hidden");
+  history.replaceState(null, "", location.pathname + "?room=" + c);
+  roomRef = R(`${c}/pub`);
+  let presence = false;
+  roomRef.on("value", s => {
+    room = s.val();
+    if (!room) { toast("That game has ended"); return leaveRoom(true); }
+    const amPlayer = !!(room.players || {})[uid];
+    if (!amPlayer && room.hostUid !== uid) { toast("You're not in this game"); return leaveRoom(true); }
+    if (amPlayer && !presence) { presence = true; presenceRef = R(`${c}/pub/players/${uid}/online`); const meRef = presenceRef; presenceCb = db.ref(".info/connected").on("value", x => { if (x.val()) { meRef.onDisconnect().set(false); meRef.set(true); } }); }
+    isHost = room.hostUid === uid; isTV = !!room.tv && isHost;
+    document.body.classList.toggle("tv", isTV); document.body.classList.toggle("tvmode", !!room.tv && !isTV);
+    if ((room.ver || 0) > APP_VERSION) return needUpdate();
+    render(); brainTick();
+  });
+  handRef = R(`${c}/hands/${uid}`);
+  handRef.on("value", s => { myHand = arr(s.val()); if (room) onHand(); });
+}
+function stopPresence() {
+  if (presenceCb) { db.ref(".info/connected").off("value", presenceCb); presenceCb = null; }
+  if (presenceRef) { try { presenceRef.onDisconnect().cancel(); } catch (e) {} presenceRef = null; }
+}
+function leaveRoom(silent) {
+  if (roomRef) roomRef.off(); if (handRef) handRef.off();
+  stopPresence(); clearTimeout(brainT); brainKey = null; closeSheet(); sel = [];
+  Object.values(VIEWS).forEach(presReset);
+  try { sessionStorage.removeItem("flipside.live"); } catch (e) {}
+  if (!silent && room && room.state && room.state.phase === "lobby" && code) R(`${code}/pub/players/${uid}`).remove();
+  store("last", null); room = null; code = null; isTV = false; document.body.classList.remove("tv", "tvmode");
+  history.replaceState(null, "", location.pathname); show("vHome");
+}
+$("leaveBtn").onclick = () => leaveRoom(false);
+async function leaveGame() {
+  if (!room || !code) return;
+  const c = code, inLobby = room.state && room.state.phase === "lobby";
+  if (inLobby) return leaveRoom(false);
+  if (isHost) await endGameFor(c, Object.keys(players()));
+  else await R(`${c}/pub/players/${uid}`).update({ bot: true, left: true, online: true });
+  leaveRoom(true); toast(isHost ? "Game ended" : "You left the game. A computer has your hand.");
+}
+async function endGameFor(c, ids) {
+  await Promise.all(ids.map(id => R(`${c}/hands/${id}`).remove().catch(() => {})));
+  await R(`${c}/pub`).remove();
+}
+async function leaveFromHome(c, host) {
+  try {
+    if (host) { const ps = (await R(`${c}/pub/players`).once("value")).val() || {}; await endGameFor(c, Object.keys(ps)); }
+    else {
+      const ph = (await R(`${c}/pub/state/phase`).once("value")).val();
+      if (ph === "lobby") await R(`${c}/pub/players/${uid}`).remove();
+      else await R(`${c}/pub/players/${uid}`).update({ bot: true, left: true, online: true });
+    }
+  } catch (e) {}
+  store("last", null); $("rejoinBox").classList.add("hidden"); history.replaceState(null, "", location.pathname);
+  toast(host ? "Game ended" : "You've left that game");
+}
+function confirmLeave() {
+  const endsIt = isHost && !room.tv;
+  openSheet("leave", `<h2>Leave this game?</h2><div class="sub">${endsIt ? "You started this game, so leaving ends it for everyone." : "A computer player will take over your hand so the others can keep playing."}</div>
+    <div class="stack"><button class="btn" onclick="leaveGame()">${endsIt ? "End the game and leave" : "Leave the game"}</button><button class="btn ghost" onclick="closeSheet()">Stay</button></div>`, true);
+}
+function needUpdate() {
+  if ($("updBox")) return;
+  const d = document.createElement("div"); d.id = "updBox"; d.className = "sheet mid";
+  d.innerHTML = `<div class="box" style="text-align:center"><h2>Flipside has been updated</h2><div class="sub">This device has an older saved copy. Update to keep playing. You'll stay in the game.</div><button class="btn" onclick="location.href=location.pathname+'?room='+code+'&v='+Date.now()">Update now</button></div>`;
+  document.body.appendChild(d);
+}
+
+// ---------- helpers on the room ----------
+const players = () => room.players || {};
+const order = () => arr(room.state && room.state.order).length ? arr(room.state.order) : Object.keys(players()).sort((a, b) => (players()[a].joinedAt || 0) - (players()[b].joinedAt || 0));
+const nameOf = id => id === uid && !isTV ? "You" : (players()[id] || {}).name || "?";
+const nextSeat = id => { const o = order(); return o[(o.indexOf(id) + 1) % o.length]; };
+const lead = () => order().find(id => !(players()[id] || {}).bot) || order()[0];
+const isBot = id => !!(players()[id] || {}).bot;
+const setting = (k, d) => room && room.settings && room.settings[k] != null ? room.settings[k] : d;
+const timerMs = () => (+setting("timer", 0) || 0) * 1000;
+const isLead = () => !!room.tv && lead() === uid;
+function sendCmd(cmd, extra) { return R(`${code}/pub/moves/${uid}`).set(Object.assign({ cmd, t: TS }, extra || {})); }
+function changeSetting(patch) { if (isHost) roomRef.child("settings").update(patch); else if (isLead()) sendCmd("set", { patch }); }
+const BOT_NAMES = ["Topsy", "Turvy", "Flipper", "Dusk", "Dawn", "Ripple"];
+function addBot() { if (isHost) brainAddBot(); else if (isLead()) sendCmd("bot"); }
+function brainAddBot() {
+  const ps = players(); if (Object.keys(ps).length >= MAX_P || room.state.phase !== "lobby") return;
+  const names = new Set(Object.values(ps).map(p => p.name)), cols = new Set(Object.values(ps).map(p => p.color));
+  const name = BOT_NAMES.find(n => !names.has(n)) || "Bot " + (Object.keys(ps).length + 1), color = COLORS.find(c => !cols.has(c)) || COLORS[0];
+  roomRef.child("players/bot_" + Math.random().toString(36).slice(2, 8)).set({ name, color, joinedAt: TS, online: true, bot: true });
+}
+function removeBot(id) { if (isHost) { if (isBot(id) && room.state.phase === "lobby") roomRef.child("players/" + id).remove(); } else if (isLead()) sendCmd("kick", { id }); }
+
+// ---------- HOST: runs the rules ----------
+let brainT = null, brainKey = null, applying = null;
+const rawName = id => (players()[id] || {}).name || "?";
+// roughly how long every screen takes to show an action, so computers and timers wait for it
+function evDur(ev) {
+  let d = { play: 1100, add: 1100, take: 3800, flip: 3600, deal: 4200 }[ev.k] || 1200;
+  if (ev.bounce) d += ev.bounce.gone ? 1900 : 3300;
+  d += (ev.outs || []).length * 3400 + (ev.disc || []).length * 1000 + (ev.end ? 1500 : 0);
+  return d;
+}
+function brainTick() {
+  if (!isHost || !room || !room.state) return;
+  const s = room.state, key = s.phase + ":" + s.seq;
+  if (key !== brainKey) { clearTimeout(brainT); brainKey = key; }
+  brainCmds(s);
+  if (s.phase === "play") {
+    const mv = (room.moves || {})[s.turn];
+    if (mv && mv.seq === s.seq && mv.a) { clearTimeout(brainT); return takeMove(s, s.turn, mv, null); }
+    clearTimeout(brainT);
+    const p = players()[s.turn], shown = Math.max(0, (s.turnAt || 0) - serverNow());
+    if (p && p.bot) { brainT = setTimeout(() => autoPlay(s.seq, "bot"), shown + 1100 + Math.random() * 700); return; }
+    let wait = Infinity, why = "time";
+    if (p && p.online === false) { wait = shown + AUTO_MS; why = "away"; }
+    if (timerMs()) wait = Math.min(wait, (s.turnAt || s.at) + timerMs() - serverNow());
+    if (wait < Infinity) brainT = setTimeout(() => autoPlay(s.seq, why), Math.max(50, wait));
+  } else if (s.phase === "roundEnd" && room.tv) {
+    clearTimeout(brainT); brainT = setTimeout(() => { if (room.state.phase === "roundEnd" && room.state.seq === s.seq) deal(); }, Math.max(50, (s.turnAt || s.at) + NEXT_MS - serverNow()));
+  }
+}
+const handledCmds = new Set();
+function brainCmds(s) {
+  if (!room.tv) return;
+  const mv = (room.moves || {})[lead()];
+  if (!mv || !mv.cmd || !(mv.t > (s.at || 0))) return;
+  const k = mv.cmd + ":" + mv.t; if (handledCmds.has(k)) return; handledCmds.add(k);
+  if (mv.cmd === "set" && s.phase === "lobby") roomRef.child("settings").update(mv.patch || {});
+  else if (mv.cmd === "bot" && s.phase === "lobby") brainAddBot();
+  else if (mv.cmd === "kick" && s.phase === "lobby" && isBot(mv.id)) roomRef.child("players/" + mv.id).remove();
+  else if (mv.cmd === "start" && s.phase === "lobby") startGame();
+  else if (mv.cmd === "deal" && s.phase === "roundEnd") deal();
+  else if (mv.cmd === "again" && s.phase === "gameOver") backToLobby();
+}
+async function readHands() {
+  const o = order(), hands = {};
+  await Promise.all(o.map(async id => { hands[id] = arr((await R(`${code}/hands/${id}`).once("value")).val()); }));
+  return hands;
+}
+async function takeMove(s, p, mv, why) {
+  if (applying === s.seq) return; applying = s.seq;
+  const hands = await readHands();
+  if (room.state.seq !== s.seq) return;
+  const ok = applyMove(s, p, mv, hands);
+  if (!ok) { applying = null; if (!why) R(`${code}/pub/moves/${p}`).remove(); return; }
+  if (why === "away") toast(`${rawName(p)} is away, so a move was made for them`);
+  else if (why === "time") toast(`${rawName(p)} ran out of time, so a move was made for them`);
+}
+function applyMove(s, p, mv, hands) {
+  const o = order(), sets = setsOf(s), out = arr(s.out), sc = Object.assign({}, room.scores || {});
+  let disc = s.disc || 0;
+  const ev = { k: mv.a, p, seq: s.seq + 1 }, hp = hands[p] || [];
+  const cs = arr(mv.cards).map(Number);
+  const has = list => list.length && new Set(list).size === list.length && list.every(e => hp.includes(e));
+  const bounce = oid => { const b = sets[oid]; delete sets[oid]; const gone = out.includes(oid); ev.bounce = { o: oid, cards: b, gone }; if (gone) disc += b.length; else hands[oid] = (hands[oid] || []).concat(b.map(e => e ^ 1)); };
+  if (mv.a === "play") {
+    if (!has(cs)) return false; const chk = playCheck(sets, p, cs); if (!chk.ok) return false;
+    hands[p] = hp.filter(e => !cs.includes(e)); sets[p] = cs; ev.cards = cs; if (chk.beats) bounce(chk.beats);
+  } else if (mv.a === "add") {
+    const e = cs[0], q = mv.to; if (!has([e])) return false; const chk = addCheck(sets, out, p, e, q); if (!chk.ok) return false;
+    hands[p] = hp.filter(x => x !== e); sets[q] = sets[q].concat([e]); ev.cards = [e]; ev.to = q; if (chk.beats) bounce(chk.beats);
+  } else if (mv.a === "take") {
+    const q = mv.to; if (!canTake(sets, out, p, q)) return false;
+    ev.cards = sets[q]; ev.to = q; hands[p] = hp.concat(sets[q].map(e => e ^ 1)); delete sets[q];
+  } else if (mv.a === "flip") { if (!hp.length) return false; hands[p] = hp.map(e => e ^ 1); }
+  else return false;
+  const counts = {}; o.forEach(id => { counts[id] = (hands[id] || []).length; });
+  let end = null; ev.outs = []; ev.disc = [];
+  if (!hands[p].length && !out.includes(p)) {
+    out.push(p); const n = out.length === 1 ? 2 : 1; sc[p] = (sc[p] || 0) + n; ev.outs.push({ p, n, place: out.length });
+    if (sc[p] >= WIN) end = "game"; else if (out.length >= 2) end = "round";
+  }
+  let turn = null;
+  if (!end) {
+    // turn passes on; a set that's gone a full round without being beaten is discarded as its owner's turn comes up
+    let id = p;
+    for (let i = 0; i < o.length; i++) {
+      id = nextSeat(id);
+      if (sets[id]) { ev.disc.push({ p: id, cards: sets[id] }); disc += sets[id].length; delete sets[id]; }
+      if (!out.includes(id)) { turn = id; break; }
+    }
+    if (!turn) end = "round";
+  }
+  ev.end = end;
+  ev.after = { sets, counts, disc, out, turn, scores: sc, star: s.star || null };
+  const phase = end === "game" ? "gameOver" : end === "round" ? "roundEnd" : "play";
+  const ns = { phase, seq: s.seq + 1, at: TS, round: s.round, order: o, turn, turnAt: serverNow() + evDur(ev), sets, counts, disc, out, star: s.star || null };
+  const upd = {};
+  o.forEach(id => { upd[`${ROOT}/${code}/hands/${id}`] = hands[id] || []; });
+  upd[`${ROOT}/${code}/pub/state`] = ns;
+  upd[`${ROOT}/${code}/pub/scores`] = sc;
+  upd[`${ROOT}/${code}/pub/evs/e${ev.seq}`] = ev;
+  upd[`${ROOT}/${code}/pub/evs/e${ev.seq - 14}`] = null;
+  db.ref().update(upd);
+  return true;
+}
+async function autoPlay(seq, why) {
+  const s = room.state; if (s.seq !== seq || s.phase !== "play" || applying === seq) return;
+  const p = s.turn, hands = await readHands();
+  if (room.state.seq !== seq) return;
+  const mv = botChoose(hands[p] || [], s, p, why === "bot" ? setting("bots", "hard") : "hard");
+  applying = seq;
+  const ok = applyMove(s, p, mv, hands);
+  if (!ok) { applying = null; applyMove(s, p, { a: "flip" }, hands); }
+  if (why === "away") toast(`${rawName(p)} is away, so a move was made for them`);
+  else if (why === "time") toast(`${rawName(p)} ran out of time, so a move was made for them`);
+}
+// ---------- computer players ----------
+function botOptions(hand, sets, out, p) {
+  const opts = [], byV = {};
+  sortHand(hand).forEach(e => (byV[val(e)] = byV[val(e)] || []).push(e));
+  for (const v in byV) {
+    // keep the cards whose other side is most useful: play the ones that would turn into lonely numbers
+    const cs = byV[v].slice().sort((x, y) => hand.filter(h => val(h) === other(y)).length - hand.filter(h => val(h) === other(x)).length);
+    for (let m = 1; m <= cs.length; m++) { const pick = cs.slice(0, m), chk = playCheck(sets, p, pick); if (chk.ok) opts.push({ a: "play", cards: pick, beats: chk.beats }); }
+  }
+  for (const q in sets) {
+    if (q === p || out.includes(q)) continue;
+    (byV[val(sets[q][0])] || []).slice(0, 1).forEach(e => { const chk = addCheck(sets, out, p, e, q); if (chk.ok) opts.push({ a: "add", cards: [e], to: q, beats: chk.beats }); });
+    opts.push({ a: "take", to: q });
+  }
+  if (hand.length) opts.push({ a: "flip" });
+  return opts;
+}
+function handScore(h) {
+  const c = {}, f = {}; h.forEach(e => { c[val(e)] = (c[val(e)] || 0) + 1; f[other(e)] = (f[other(e)] || 0) + 1; });
+  let s = -h.length * 4;
+  for (const v in c) s += c[v] * c[v] * 1.1 + (c[v] > 1 ? v * 0.08 : 0);
+  for (const v in f) s += f[v] * f[v] * 0.35;
+  return s;
+}
+function scoreOpt(o, hand, sets, out, counts) {
+  let h = hand;
+  if (o.a === "play" || o.a === "add") h = hand.filter(e => !o.cards.includes(e));
+  else if (o.a === "take") h = hand.concat(sets[o.to].map(e => e ^ 1));
+  else if (o.a === "flip") h = hand.map(e => e ^ 1);
+  let s = handScore(h);
+  if (!h.length) s += 1000;
+  if (o.beats) s += out.includes(o.beats) ? 3 : 2 + Math.max(0, 6 - (counts[o.beats] || 6)) * 0.6;
+  if (o.a === "add") s -= 2 + ((counts[o.to] || 9) <= 2 ? 6 : 0);
+  if (o.a === "play") s += o.cards.length * 0.4 - val(o.cards[0]) * 0.06;
+  if (o.a === "flip") s -= 1.5;
+  if (o.a === "take") s -= 1;
+  return s;
+}
+function botChoose(hand, s, p, level) {
+  const sets = setsOf(s), out = arr(s.out), counts = s.counts || {};
+  const opts = botOptions(hand, sets, out, p);
+  if (!opts.length) return { a: "flip" };
+  const scored = opts.map(o => ({ o, s: scoreOpt(o, hand, sets, out, counts) })).sort((a, b) => b.s - a.s);
+  if (level === "easy") {
+    if (scored[0].s > 500) return scored[0].o;
+    const plays = opts.filter(o => o.a === "play");
+    if (plays.length && Math.random() < 0.55) return plays[Math.floor(Math.random() * plays.length)];
+    const calm = scored.filter(x => x.o.a !== "take" || x === scored[0]);
+    return calm[Math.floor(Math.random() * Math.min(3, calm.length))].o;
+  }
+  return scored[0].o;
+}
+let dealing = false;
+async function deal() { if (dealing) return; dealing = true; try { await dealNow(); } finally { dealing = false; } }
+async function dealNow() {
+  const s = room.state, o = order(), n = o.length, deck = shuffle(deckFor(n)), per = deck.length / n;
+  const upd = {}; let star = o[0];
+  const counts = {};
+  o.forEach((id, i) => {
+    const h = deck.slice(i * per, (i + 1) * per).map(k => k * 2 + (Math.random() < 0.5 ? 1 : 0)); // dealt whichever way up they land
+    if (h.some(e => e >> 1 === STAR_K)) star = id;
+    upd[`${ROOT}/${code}/hands/${id}`] = h; counts[id] = h.length;
+  });
+  const seq = (s.seq || 0) + 1;
+  const ev = { k: "deal", seq, p: star, per, after: { sets: {}, counts, disc: 0, out: [], turn: star, scores: Object.assign({}, room.scores || {}), star } };
+  upd[`${ROOT}/${code}/pub/state`] = { phase: "play", seq, at: TS, round: (s.round || 0) + 1, order: o, turn: star, turnAt: serverNow() + evDur(ev), sets: null, counts, disc: 0, out: null, star };
+  upd[`${ROOT}/${code}/pub/evs/e${seq}`] = ev;
+  upd[`${ROOT}/${code}/pub/moves`] = null;
+  await db.ref().update(upd);
+}
+let starting = false;
+async function startGame() {
+  const n = Object.keys(players()).length; if (n < MIN_P || n > MAX_P || starting) return;
+  starting = true;
+  try {
+    await roomRef.update({ scores: null, evs: null, moves: null, state: { phase: "lobby", seq: (room.state.seq || 0) + 1, at: room.state.at || 0, order: Object.keys(players()).sort((a, b) => (players()[a].joinedAt || 0) - (players()[b].joinedAt || 0)), round: 0 } });
+    await deal();
+  } finally { starting = false; }
+}
+$("startBtn").onclick = async () => {
+  const n = Object.keys(players()).length; if (n < MIN_P || n > MAX_P) return;
+  if (isLead()) { $("startBtn").disabled = true; await sendCmd("start"); return; }
+  if (!isHost) return;
+  $("startBtn").disabled = true;
+  await roomRef.child("settings").update({ ladder: $("optLadder").checked, timer: +$("optTimer").value, bots: $("optBots").value });
+  await startGame();
+  $("startBtn").disabled = false;
+};
+$("optLadder").onchange = () => changeSetting({ ladder: $("optLadder").checked });
+$("optTimer").onchange = () => changeSetting({ timer: +$("optTimer").value });
+$("optBots").onchange = () => changeSetting({ bots: $("optBots").value });
+$("addBotBtn").onclick = addBot;
+function nextRound() { if (room.state.phase !== "roundEnd") return; closeSheet(); if (isHost) deal(); else if (isLead()) sendCmd("deal"); }
+function backToLobby() { if (!isHost) { if (isLead() && room.state.phase === "gameOver") sendCmd("again"); return; } closeSheet(); roomRef.update({ scores: null, evs: null, moves: null, state: { phase: "lobby", seq: (room.state.seq || 0) + 1, at: TS } }); Object.keys(players()).forEach(id => R(`${code}/hands/${id}`).remove()); }
+
+// ---------- PHONE: render ----------
+let sel = [], handView = [], pending = null, pendingAt = 0, flipArm = 0, wasMyTurn = false;
+const poss = id => id === uid ? "your" : esc(rawName(id)) + "'s";
+function render() {
+  if (!room || !room.state) return;
+  if (isTV) return renderTV();
+  const s = room.state;
+  if (pending != null && s.seq !== pending) pending = null;
+  if (pending != null && !(room.moves || {})[uid] && Date.now() - pendingAt > 1500) { pending = null; toast("That move isn't allowed right now"); }
+  if (s.phase === "lobby") { show("vLobby"); if ($("sheetHost").dataset.kind === "scores") closeSheet(); presReset(viewFor("phone")); wasMyTurn = false; return renderLobby(); }
+  show("vGame");
+  $("gRound").textContent = `Round ${s.round || 1}`;
+  const V = viewFor("phone"); syncPres(V);
+  if (!V.busy) { drawPhone(V.shown); renderHand(); }
+  paintControls(); paintTimers();
+}
+function onHand() {
+  if (isTV || !room || !room.state || room.state.phase === "lobby") return;
+  const V = viewFor("phone");
+  if (!V.busy && !V.q.length) { reconcileHand(); renderHand(); paintControls(); }
+}
+function reconcileHand() {
+  if (sortHand(handView).join() !== sortHand(myHand).join()) handView = myHand.slice();
+  sel = sel.filter(e => handView.includes(e));
+}
+function renderLobby() {
+  $("lobbyCode").textContent = code;
+  const url = location.origin + location.pathname + "?room=" + code;
+  if ($("qr").dataset.u !== url) { $("qr").dataset.u = url; $("qr").innerHTML = ""; try { new QRCode($("qr"), { text: url, width: 136, height: 136, colorDark: "#22162e", colorLight: "#ffffff" }); } catch (e) {} }
+  const ids = order(), n = ids.length, ctl = isHost || isLead();
+  $("lobbyCount").textContent = `Players · ${n} of ${MAX_P}`;
+  $("lobbyList").innerHTML = ids.map(id => { const p = players()[id]; return `<div class="prow">${avatar(p, 34)}<span>${esc(p.name)}${id === uid ? " (you)" : ""}${p.bot ? '<span class="botb">BOT</span>' : ""}</span>${(room.tv ? id === lead() : id === room.hostUid) ? `<span class="host">${room.tv ? "LEAD" : "HOST"}</span>` : ""}${p.online === false ? '<span class="host" style="color:var(--bad)">AWAY</span>' : ""}${p.bot && ctl ? `<button class="xbtn" onclick="removeBot('${id}')" aria-label="Remove ${esc(p.name)}">✕</button>` : ""}</div>`; }).join("");
+  const sync = (el, v) => { if (document.activeElement !== el) { if (el.type === "checkbox") el.checked = v; else el.value = String(v); } };
+  sync($("optLadder"), setting("ladder", true) !== false); sync($("optTimer"), setting("timer", 0)); sync($("optBots"), setting("bots", "hard"));
+  $("addBotBtn").disabled = n >= MAX_P;
+  $("hostBox").classList.toggle("hidden", !ctl); $("guestBox").classList.toggle("hidden", ctl);
+  $("guestBox").textContent = room.tv ? `Waiting for ${n ? esc(rawName(lead())) : "the lead"} or the table screen to deal…` : "Waiting for the host to deal…";
+  $("startBtn").disabled = n < MIN_P || n > MAX_P;
+  $("startHint").textContent = n < MIN_P ? `Need at least ${MIN_P} players (${MIN_P - n} more)` : `${n} players · ${deckFor(n).length / n} cards each · first to spell F‑L‑I‑P wins`;
+}
+function ladderHTML(W) {
+  if (setting("ladder", true) === false) return "";
+  const list = Object.entries(W.sets || {}).sort((a, b) => a[1].length - b[1].length);
+  return list.map(([id, cs]) => `<span>${cs.length} card${cs.length > 1 ? "s" : ""} · <b>${val(cs[0])}</b></span>`).join("");
+}
+function statusText(W) {
+  const s = room.state;
+  if (s.phase !== "play" || !W.turn) return "";
+  if (W.out.includes(uid) && !isTV) return W.turn === uid ? "" : `You're out · ${esc(rawName(W.turn))}'s turn`;
+  return W.turn === uid && !isTV ? "Your turn" : `${esc(rawName(W.turn))}'s turn`;
+}
+function drawPhone(W) {
+  if (!W) return;
+  const o = order(), me = o.indexOf(uid), others = o.slice(me + 1).concat(o.slice(0, Math.max(0, me)));
+  const act = canAct();
+  $("opps").innerHTML = others.map(id => {
+    const p = players()[id] || {}, cs = W.sets[id] || [], isOut = W.out.includes(id), place = W.out.indexOf(id);
+    const tap = act && cs.length && !isOut;
+    return `<div class="opp ${W.turn === id ? "turn" : ""} ${isOut ? "isout" : ""} ${tap ? "tap" : ""}" data-seat="${id}" ${tap ? `onclick="openSetSheet('${id}')" role="button" aria-label="${esc(p.name)}'s set: add to it or take it"` : ""}>
+      <div class="nm"><span class="dot" style="background:${p.color || "#8EC4F7"}"></span>${esc(p.name)}${p.bot ? '<span class="botb">BOT</span>' : ""}</div>
+      ${isOut ? `<div class="outb">Out ${place === 0 ? "first" : "second"}!</div>` : `<div class="ct"><i class="mini"></i>${W.counts[id] || 0} card${W.counts[id] === 1 ? "" : "s"}${W.turn === id ? ' <span class="tleft"></span>' : ""}</div>`}
+      ${p.online === false && !p.bot ? '<span class="off">AWAY</span>' : ""}
+      <div class="oset">${cs.map(e => cardHTML(e, isOut ? "prot" : "")).join("")}</div></div>`;
+  }).join("");
+  const mine = W.sets[uid] || [];
+  $("mySet").innerHTML = mine.map(e => cardHTML(e, W.out.includes(uid) ? "prot" : "")).join("");
+  $("myLab").textContent = mine.length ? "Your set" : "";
+  $("pileN").textContent = `${W.disc || 0} discarded`; $("pile").classList.toggle("empty", !W.disc);
+  $("ladder").innerHTML = ladderHTML(W);
+  if (!(VIEWS.phone && VIEWS.phone.busy)) { const st = $("status"); st.textContent = statusText(W); st.classList.toggle("mine", W.turn === uid && !W.out.includes(uid)); }
+}
+
+// ---------- PHONE: the hand ----------
+const FEEL_DEFAULT = { res: 0.25, mag: 1.3, ease: 0.22 };
+let FEEL = Object.assign({}, FEEL_DEFAULT, load("feel") || {});
+const HZ = { els: [], cards: [], focus: null, target: null, fi: 0, act: 0, drag: null, kb: false, spread: 20, lift: 28, raf: 0, cw: 80, W: 360 };
+function handGeom() {
+  const n = HZ.cards.length, cw = HZ.cw, inner = HZ.W - cw - 2 * HZ.spread - 8;
+  const step = n > 1 ? Math.min(cw * 0.8, inner / (n - 1)) : 0;
+  return { n, step, left: 4 + HZ.spread + Math.max(0, (inner - step * (n - 1)) / 2) };
+}
+function handFrame() {
+  HZ.raf = 0;
+  const actT = HZ.drag || HZ.kb ? 1 : 0;
+  HZ.act += (actT - HZ.act) * (reduceMotion ? 1 : 0.2);
+  if (HZ.target != null) HZ.focus = HZ.focus == null || reduceMotion ? HZ.target : HZ.focus + (HZ.target - HZ.focus) * FEEL.ease;
+  if (!actT && HZ.act < 0.01) { HZ.act = 0; }
+  const g = handGeom(), f = HZ.focus == null ? -99 : HZ.focus, a = HZ.act;
+  HZ.els.forEach((el, i) => {
+    const d = i - f, near = Math.exp(-(d * d) / 0.55);
+    const push = Math.sign(d) * HZ.spread * (1 - Math.exp(-Math.abs(d) * 1.4)) * a;
+    const sc = 1 + (FEEL.mag - 1) * near * a;
+    const lift = -(HZ.lift * near * a + (sel.includes(HZ.cards[i]) ? 18 : 0));
+    const extra = (sc - 1) * HZ.cw / 2;
+    const x = Math.max(extra + 2, Math.min(HZ.W - HZ.cw - extra - 2, g.left + i * g.step + push));
+    const rot = (i - (g.n - 1) / 2) * Math.min(1.6, 12 / Math.max(1, g.n)) * (1 - near * a);
+    el.style.transform = `translate(${x.toFixed(1)}px, ${lift.toFixed(1)}px) rotate(${rot.toFixed(2)}deg) scale(${sc.toFixed(3)})`;
+    el.style.zIndex = a < 0.05 ? i + 1 : Math.max(1, 200 - Math.round(Math.abs(d) * 10));
+  });
+  if (HZ.drag || Math.abs(HZ.act - actT) > 0.004 || (HZ.target != null && HZ.focus != null && Math.abs(HZ.focus - HZ.target) > 0.003)) HZ.raf = requestAnimationFrame(handFrame);
+}
+function startHandLoop() { if (!HZ.raf) HZ.raf = requestAnimationFrame(handFrame); }
+function sizeHandZone() { $("handZone").style.paddingTop = "26px"; } // the magnified card may rise over the verdict line while you browse
+function haptic(strong) { if (isTV) return; try { if (typeof navigator.vibrate === "function") navigator.vibrate(strong ? 18 : 7); else $("hapLab").click(); } catch (e) {} }
+function renderHand() {
+  if (!room || !room.state || room.state.phase === "lobby") return;
+  const h = $("hand"), cards = sortHand(handView);
+  const W = h.clientWidth || 360, cw = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--cw")) || 80;
+  const key = cards.join(",") + "|" + W + "|" + cw;
+  if (h.dataset.key !== key) {
+    h.dataset.key = key; HZ.W = W; HZ.cw = cw; HZ.cards = cards; sizeHandZone();
+    h.innerHTML = "";
+    HZ.els = cards.map(e => { const b = document.createElement("div"); b.className = "hcard"; b.innerHTML = cardHTML(e); h.appendChild(b); return b; });
+    if (HZ.focus != null && HZ.focus > cards.length - 1) HZ.focus = cards.length - 1;
+    HZ.fi = Math.min(HZ.fi, Math.max(0, cards.length - 1));
+    handFrame(); // lay the new cards out now, so animations can measure where they sit
+  }
+  sel = sel.filter(e => cards.includes(e));
+  paintSel();
+  h.parentElement.querySelector(".outmsg") && h.parentElement.querySelector(".outmsg").remove();
+}
+function paintSel() {
+  const sv = sel.length ? val(sel[0]) : null;
+  HZ.els.forEach((b, i) => { const e = HZ.cards[i]; b.classList.toggle("sel", sel.includes(e)); b.classList.toggle("dim", sv != null && val(e) !== sv); });
+  // a bar under each group of matching numbers picks the whole group
+  const g = handGeom(), runs = []; let i = 0;
+  while (i < HZ.cards.length) { let j = i; while (j + 1 < HZ.cards.length && val(HZ.cards[j + 1]) === val(HZ.cards[i])) j++; if (j > i) runs.push([i, j]); i = j + 1; }
+  $("runs").innerHTML = runs.map(([a, b]) => { const ids = HZ.cards.slice(a, b + 1), on = ids.every(e => sel.includes(e)), x0 = g.left + a * g.step, x1 = g.left + b * g.step + HZ.cw;
+    return `<button class="run ${on ? "on" : ""}" style="left:${(x0 + 4).toFixed(0)}px;width:${(x1 - x0 - 8).toFixed(0)}px" onclick="pickRun('${ids.join(",")}')">all ${b - a + 1}</button>`; }).join("");
+  startHandLoop(); paintControls();
+}
+function pickRun(list) { const ids = list.split(",").map(Number); sel = ids.every(e => sel.includes(e)) ? [] : ids; haptic(false); paintSel(); }
+function toggleSel(e) {
+  if (e == null) return;
+  if (sel.includes(e)) sel = sel.filter(x => x !== e);
+  else if (sel.length && val(sel[0]) === val(e)) sel.push(e);
+  else sel = [e];
+  paintSel();
+}
+function idxAt(clientX) { const r = $("hand").getBoundingClientRect(), g = handGeom(); return Math.max(0, Math.min(g.n - 1, (clientX - r.left - g.left - HZ.cw / 2) / (g.step || 1))); }
+const zoneEl = $("handZone");
+zoneEl.addEventListener("pointerdown", e => {
+  if (!room || !room.state || room.state.phase === "lobby" || !HZ.cards.length) return;
+  try { zoneEl.setPointerCapture(e.pointerId); } catch (x) {}
+  const f = idxAt(e.clientX); HZ.fi = Math.round(f); HZ.kb = false;
+  if (HZ.focus == null || HZ.act < 0.05) HZ.focus = HZ.fi;
+  HZ.target = HZ.fi; HZ.drag = { id: e.pointerId }; haptic(false); startHandLoop();
+});
+zoneEl.addEventListener("pointermove", e => {
+  const D = HZ.drag; if (!D || e.pointerId !== D.id) return;
+  const f = idxAt(e.clientX);
+  // resistance: the magnified card only moves on once the finger is clearly past the middle of the next one
+  if (Math.abs(f - HZ.fi) > 0.5 + FEEL.res) { HZ.fi = Math.round(f); haptic(false); }
+  HZ.target = HZ.fi + (f - HZ.fi) * 0.35; startHandLoop();
+});
+function endHandDrag(e) {
+  const D = HZ.drag; if (!D || e.pointerId !== D.id) return;
+  HZ.drag = null; HZ.target = HZ.fi;
+  if (e.type === "pointerup") toggleSel(HZ.cards[HZ.fi]);
+  startHandLoop();
+}
+zoneEl.addEventListener("pointerup", endHandDrag);
+zoneEl.addEventListener("pointercancel", endHandDrag);
+zoneEl.addEventListener("keydown", e => {
+  if (!HZ.cards.length) return;
+  if (e.key === "ArrowRight" || e.key === "ArrowLeft") { e.preventDefault(); HZ.kb = true; HZ.fi = Math.max(0, Math.min(HZ.cards.length - 1, HZ.fi + (e.key === "ArrowRight" ? 1 : -1))); HZ.target = HZ.fi; if (HZ.focus == null) HZ.focus = HZ.fi; startHandLoop(); }
+  else if (e.key === " ") { e.preventDefault(); toggleSel(HZ.cards[HZ.fi]); }
+  else if (e.key === "Enter") { e.preventDefault(); playSel(); }
+  else if (e.key === "Escape") { sel = []; HZ.kb = false; paintSel(); }
+});
+zoneEl.addEventListener("blur", () => { HZ.kb = false; startHandLoop(); });
+
+// ---------- PHONE: actions ----------
+function canAct() {
+  const s = room && room.state, V = VIEWS.phone;
+  return !!s && s.phase === "play" && s.turn === uid && !!V && !V.busy && !V.q.length && V.seq === s.seq && pending == null;
+}
+async function submitMove(mv) {
+  if (!canAct()) return;
+  pending = room.state.seq; pendingAt = Date.now(); flipArm = 0; closeSheet();
+  paintControls(); drawPhone(VIEWS.phone.shown);
+  await R(`${code}/pub/moves/${uid}`).set(Object.assign({ seq: room.state.seq }, mv));
+}
+function playSel() {
+  if (!canAct() || !sel.length) return;
+  const chk = playCheck(VIEWS.phone.shown.sets, uid, sel); if (!chk.ok) return;
+  haptic(true); submitMove({ a: "play", cards: sel.slice() });
+}
+$("playBtn").onclick = playSel;
+$("flipBtn").onclick = () => {
+  if (!canAct()) return;
+  if (flipArm && Date.now() - flipArm < 2600) { haptic(true); return submitMove({ a: "flip" }); }
+  flipArm = Date.now(); paintControls(); setTimeout(paintControls, 2700);
+};
+function paintControls() {
+  if (!room || !room.state || isTV) return;
+  const s = room.state, V = VIEWS.phone, my = canAct(), W = (V && V.shown) || { sets: {}, out: [], turn: null };
+  const pb = $("playBtn"), fb = $("flipBtn"), vd = $("verdict");
+  const meOut = (W.out || []).includes(uid);
+  const armed = flipArm && Date.now() - flipArm < 2600;
+  fb.disabled = !my; fb.textContent = armed && my ? "Tap again" : "Flip hand"; fb.classList.toggle("arm", !!(armed && my));
+  let text = "", cls = ""; pb.disabled = true; pb.textContent = "Play";
+  if (s.phase !== "play") text = "";
+  else if (meOut) text = "You're out! Watch the rest of the round";
+  else if (pending != null) text = "…";
+  else if (!sel.length) text = my ? (armed ? "Flipping turns every card in your hand over" : "Pick cards to play, tap a glowing set, or flip") : (V && (V.busy || V.q.length)) ? "" : W.turn ? `Waiting for ${esc(rawName(W.turn))}…` : "";
+  else {
+    const chk = playCheck(W.sets, uid, sel), v = val(sel[0]);
+    pb.textContent = `Play ${sel.length} × ${v}`;
+    if (chk.ok) { cls = "good"; text = chk.beats ? `Beats ${poss(chk.beats)} ${val(W.sets[chk.beats][0])}s: ${W.out.includes(chk.beats) ? "they're discarded" : "they go back, flipped"}` : `No set of ${sel.length} is out: it goes down safely`; pb.disabled = !my; }
+    else { cls = "bad"; text = chk.why; }
+  }
+  vd.className = "verdict " + cls; vd.innerHTML = text;
+  document.querySelectorAll("#opps .opp").forEach(t => { const id = t.dataset.seat, cs = W.sets[id]; t.classList.toggle("tap", my && !!cs && !W.out.includes(id)); t.onclick = my && cs && !W.out.includes(id) ? () => openSetSheet(id) : null; });
+}
+function openSetSheet(q) {
+  if (!canAct()) return;
+  const W = VIEWS.phone.shown, cs = W.sets[q]; if (!cs || W.out.includes(q)) return;
+  const v = val(cs[0]), seen = new Set();
+  const mine = sortHand(handView).filter(e => val(e) === v && !seen.has(other(e)) && seen.add(other(e)));
+  const adds = mine.map(e => {
+    const chk = addCheck(W.sets, W.out, uid, e, q);
+    const why = chk.ok ? (chk.beats ? `Makes ${cs.length + 1} ${v}s, beating ${poss(chk.beats)} ${val(W.sets[chk.beats][0])}s: ${W.out.includes(chk.beats) ? "they're discarded" : "they go back, flipped"}` : `Makes ${cs.length + 1} ${v}s for ${esc(rawName(q))}`) : chk.why;
+    return `<button class="opt ${chk.ok ? "go" : ""}" ${chk.ok ? `onclick="submitMove({a:'add',cards:[${e}],to:'${q}'})"` : "disabled"}><span class="rowc">${cardHTML(e)}<span>Add your ${v}<small>${why}</small></span></span></button>`;
+  }).join("");
+  openSheet("set", `<h2>${esc(rawName(q))}'s ${setName(cs)}</h2><div class="sub">${mine.length ? `You hold ${mine.length > 1 ? "some" : "a"} ${v}, so you can add one, or take the set.` : `Take it into your hand, or close this.`}</div>
+    ${adds}
+    <button class="opt" onclick="submitMove({a:'take',to:'${q}'})"><span class="rowc">${cs.map(e => cardHTML(e)).join("")}<span>Take the ${cs.length > 1 ? "set" : "card"}<small>${cs.length > 1 ? "They come" : "It comes"} to your hand flipped: ${cs.map(e => other(e)).join(", ")}</small></span></span></button>
+    <button class="btn ghost" onclick="closeSheet()">Cancel</button>`);
+}
+$("arena").addEventListener("click", () => { if (presHurry(VIEWS.phone)) return; if (sel.length) { sel = []; paintSel(); } });
+
+// ---------- sheets ----------
+function openSheet(kind, html, mid) {
+  const h = $("sheetHost"); h.dataset.kind = kind;
+  h.innerHTML = `<div class="sheet ${mid ? "mid" : ""}"><div class="box">${html}</div></div>`;
+  h.firstElementChild.addEventListener("click", e => { if (e.target === h.firstElementChild && kind !== "scores-auto") closeSheet(); });
+}
+function closeSheet(only) { const h = $("sheetHost"); if (only && h.dataset.kind !== only) return; h.innerHTML = ""; h.dataset.kind = ""; h.dataset.seq = ""; }
+$("scoresBtn").onclick = () => openScores(false);
+function scoreRows(s, fresh) {
+  const sc = room.scores || {}, o = order(), W = (VIEWS.phone && VIEWS.phone.shown) || { counts: s.counts || {}, out: arr(s.out) }, out = arr(s.out);
+  return o.slice().sort((a, b) => (sc[b] || 0) - (sc[a] || 0)).map((id, i) => {
+    const p = players()[id] || {}, pl = out.indexOf(id), n = sc[id] || 0;
+    const note = pl === 0 ? "Out first this round · +2" : pl === 1 ? "Out second · +1" : s.phase === "play" ? `${(W.counts || {})[id] || 0} cards in hand` : "Still holding cards";
+    const gain = fresh && pl >= 0 ? (pl === 0 ? 2 : 1) : 0;
+    return `<div class="srow ${i === 0 && n ? "lead" : ""}">${avatar(p, 30)}<div>${esc(p.name)}${id === uid ? " (you)" : ""}<small>${note}</small></div>${toksHTML(Math.min(4, n), Math.min(gain, n))}</div>`;
+  }).join("");
+}
+function openScores(auto) {
+  const s = room.state, h = $("sheetHost"), key = s.phase + ":" + s.seq;
+  if (auto && h.dataset.seq === key) return;
+  const over = s.phase === "gameOver", ended = over || s.phase === "roundEnd", ctl = isHost || isLead(), sc = room.scores || {};
+  const win = order().find(id => (sc[id] || 0) >= WIN);
+  const title = over ? (win === uid ? "You spelled FLIP!" : `${esc(rawName(win))} spells FLIP!`) : ended ? `Round ${s.round} over` : "Score";
+  let btns = "";
+  if (over) btns = ctl ? `<button class="btn" onclick="backToLobby()">Play again</button>` : `<div class="sub">${room.tv ? esc(rawName(lead())) + " can start a new game" : "Waiting for the host to start a new game"}</div>`;
+  else if (ended) btns = ctl && !room.tv ? `<button class="btn" onclick="nextRound()">Deal round ${s.round + 1}</button>` : `<div class="sub">${room.tv ? "The next round deals on the table in a moment" : "Waiting for the host to deal the next round"}</div>`;
+  if (!ended) btns = `<button class="btn red" onclick="confirmLeave()">Leave game</button><button class="btn ghost" onclick="closeSheet()">Close</button>`;
+  else btns += `<button class="btn ghost" onclick="${over ? "confirmLeave()" : "closeSheet()"}">${over ? "Leave" : "Close"}</button>`;
+  openSheet(auto ? "scores-auto" : "scores", `<h2>${title}</h2><div class="sub">First to spell F‑L‑I‑P wins. Each round, the first player out takes 2 letters and the second takes 1.</div>${scoreRows(s, auto && ended)}<div class="stack" style="margin-top:14px">${btns}</div>`, true);
+  h.dataset.seq = key;
+  if (auto && over) { if (win === uid) confetti(); sfx(win === uid ? "fanfare" : "bell"); }
+}
+function openRules() {
+  openSheet("rules", `<h2>How to play</h2><div class="rules">
+    <p>Every card has two numbers. The big one, top left, is the one that counts. The small boxed one is what it becomes if the card is turned over. You can't turn single cards in your hand.</p>
+    <h3>Your turn</h3><p>First, if your set from last turn is still out, it's discarded: those cards are gone for good. Then do one thing:</p>
+    <ul><li><b>Play a set</b>: one or more cards of the same number. If someone already has a set the same size out, yours must be higher, and theirs goes back to their hand, flipped.</li>
+    <li><b>Add a card</b> to someone's set: it must be the same number. If that makes it the same size as another set, it must be higher, and that set goes back.</li>
+    <li><b>Take a set</b> from someone: the cards come into your hand, flipped.</li>
+    <li><b>Flip your hand</b>: every card in your hand turns over.</li></ul>
+    <p>Sets only clash with sets of the same size.</p>
+    <h3>Going out</h3><p>The first player to empty their hand takes 2 letters of F‑L‑I‑P; their last set stays out until their turn would come round, and if it's beaten it's discarded. The second player out takes 1 letter and the round ends. Spell the whole word to win.</p>
+    <h3>Setting up</h3><p>3 players use 30 cards, 4 use 36 and 5 use all 40, so everyone gets the same size hand. Pips on the card edge show when a card joins: one pip at 3 players, two at 4, three at 5. Whoever holds the ★ 1/5 card starts each round.</p></div>
+    <button class="btn" style="margin-top:12px" onclick="closeSheet()">Got it</button>`, true);
+}
+function confetti() { if (reduceMotion) return; for (let i = 0; i < 70; i++) { const c = document.createElement("div"); c.className = "confetti"; c.style.left = Math.random() * 100 + "vw"; c.style.background = HUE[1 + (i % 10)]; c.style.animationDuration = 2 + Math.random() * 2 + "s"; c.style.animationDelay = Math.random() * 0.8 + "s"; document.body.appendChild(c); setTimeout(() => c.remove(), 5000); } }
+window.addEventListener("resize", () => { if (room && room.state && room.state.phase !== "lobby" && !isTV) { renderHand(); } });
+
+// ---------- the presenter: every screen replays each action, one at a time ----------
+const VIEWS = {};
+function viewFor(kind) { const V = VIEWS[kind] || (VIEWS[kind] = { kind, shown: null, seq: -1, qseq: -1, q: [], busy: false, sp: 1, gen: 0, resnap: false }); V.me = kind === "phone" ? uid : null; return V; }
+function presReset(V) { if (!V) return; V.gen++; V.shown = null; V.seq = -1; V.qseq = -1; V.q = []; V.busy = false; V.sp = 1; V.resnap = false; $("fx").innerHTML = ""; hurryShow(V, false); }
+const normSnap = a => ({ sets: setsOf(a), counts: Object.assign({}, (a && a.counts) || {}), disc: (a && a.disc) || 0, out: arr(a && a.out), turn: (a && a.turn) || null, scores: Object.assign({}, (a && a.scores) || {}), star: (a && a.star) || null });
+const snapOf = s => normSnap(Object.assign({}, s, { scores: room.scores || {} }));
+function normEv(ev) {
+  const e = Object.assign({}, ev);
+  e.cards = arr(e.cards).map(Number);
+  if (e.bounce) e.bounce = Object.assign({}, e.bounce, { cards: arr(e.bounce.cards).map(Number) });
+  e.outs = arr(e.outs); e.disc = arr(e.disc).map(d => ({ p: d.p, cards: arr(d.cards).map(Number) }));
+  e.after = normSnap(e.after || {});
+  return e;
+}
+function syncPres(V) {
+  const s = room.state;
+  const evs = Object.values(room.evs || {}).filter(e => e && e.seq > V.qseq).sort((a, b) => a.seq - b.seq);
+  if (V.shown == null) {
+    const last = evs[evs.length - 1];
+    // arriving just as a round is dealt: show the deal; otherwise just show the table as it is
+    if (last && last.k === "deal" && last.seq === s.seq && serverNow() - (s.at || 0) < 8000) { V.shown = normSnap({}); V.seq = V.qseq = last.seq - 1; if (V.kind === "phone") handView = []; }
+    else { V.shown = snapOf(s); V.seq = V.qseq = s.seq; if (V.kind === "phone") handView = myHand.slice(); return; }
+  }
+  const fresh = Object.values(room.evs || {}).filter(e => e && e.seq > V.qseq).sort((a, b) => a.seq - b.seq);
+  if (fresh.length && fresh[0].seq !== V.qseq + 1) { V.q = []; V.resnap = true; V.qseq = s.seq; }
+  else fresh.forEach(e => { V.q.push(normEv(e)); V.qseq = e.seq; });
+  if (s.seq > V.qseq) { V.resnap = true; V.qseq = s.seq; }
+  runPres(V);
+}
+function runPres(V) {
+  if (V.busy) return;
+  if (!V.q.length) {
+    if (V.resnap) { V.resnap = false; V.shown = snapOf(room.state); V.seq = room.state.seq; if (V.kind === "phone") handView = myHand.slice(); }
+    V.sp = 1; hurryShow(V, false); return presIdle(V);
+  }
+  V.busy = true; const ev = V.q.shift(), g = V.gen;
+  hurryShow(V, true);
+  runEv(V, ev).catch(e => { if (e !== "stop") console.error(e); }).then(() => {
+    if (V.gen !== g) return;
+    $("fx").innerHTML = "";
+    V.shown = ev.after; V.seq = ev.seq; V.busy = false;
+    drawV(V, V.shown);
+    runPres(V);
+  });
+}
+function presIdle(V) {
+  if (!room || !room.state) return;
+  const s = room.state;
+  if (V.kind === "phone") {
+    reconcileHand(); drawPhone(V.shown); renderHand(); paintControls();
+    const myTurn = s.phase === "play" && s.turn === uid && V.seq === s.seq;
+    if (myTurn && !wasMyTurn) { sfx("turn"); if (navigator.vibrate) navigator.vibrate(room.tv ? [40, 60, 40] : 30); }
+    wasMyTurn = myTurn;
+    if ((s.phase === "roundEnd" || s.phase === "gameOver") && V.seq === s.seq) openScores(true);
+    else if ($("sheetHost").dataset.kind === "scores-auto") closeSheet();
+  } else { drawTV(V.shown); tvOverlay(V.seq === s.seq ? s : null); }
+}
+function presHurry(V) {
+  if (!V || !V.busy || reduceMotion) return false;
+  V.sp = 0.3; $("fx").querySelectorAll("*").forEach(el => el.getAnimations().forEach(a => { a.playbackRate = 3; }));
+  return true;
+}
+function hurryShow(V, on) { if (V && V.kind === "phone") $("hurry").classList.toggle("on", !!on && !reduceMotion); }
+$("tvTable").addEventListener("click", () => presHurry(VIEWS.tv));
+
+// ---------- animation helpers ----------
+const wait = (V, ms) => { const g = V.gen; return new Promise((res, rej) => setTimeout(() => (V.gen === g ? res() : rej("stop")), reduceMotion ? 0 : ms * V.sp)); };
+const box = el => { const r = el.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; };
+const clampX = (x, w) => Math.max(8, Math.min(innerWidth - w - 8, x));
+function ghost(r, html, back) { const g = document.createElement("div"); g.className = "fc" + (back ? " back" : ""); g.style.cssText = `left:${r.x}px;top:${r.y}px;width:${r.w}px;--w:${r.w}px;transition:none`; if (!back) g.innerHTML = html; $("fx").appendChild(g); return g; }
+async function go(V, g, to, dur, o = {}) {
+  const f = { x: parseFloat(g.style.left), y: parseFloat(g.style.top), w: parseFloat(g.style.width) };
+  const kf = [{ left: f.x + "px", top: f.y + "px", width: f.w + "px", transform: o.t0 || "none", opacity: o.o0 ?? 1 }, { left: to.x + "px", top: to.y + "px", width: to.w + "px", transform: o.t1 || "none", opacity: o.o1 ?? 1 }];
+  if (o.arc) kf.splice(1, 0, { left: (f.x + to.x) / 2 + "px", top: Math.min(f.y, to.y) - o.arc + "px", width: (f.w + to.w) / 2 * (o.grow || 1) + "px", transform: o.tm || o.t1 || "none", opacity: 1 });
+  if (!reduceMotion) { const a = g.animate(kf, { duration: dur * V.sp, easing: o.ease || "cubic-bezier(.45,0,.25,1)" }); if (V.sp < 1) a.playbackRate = 1; await a.finished; }
+  Object.assign(g.style, { left: to.x + "px", top: to.y + "px", width: to.w + "px", transform: o.t1 || "", opacity: o.o1 ?? 1 });
+  g.style.setProperty("--w", to.w + "px");
+}
+function label(g, t, i) {
+  const r = box(g), l = document.createElement("div"); l.className = "lbl2"; l.textContent = t; l.style.left = r.x + r.w / 2 + "px"; l.style.top = Math.max(4, r.y - 30 - (i % 2) * 26) + "px"; $("fx").appendChild(l);
+  l.animate([{ opacity: 0, transform: "translateX(-50%) scale(.6)" }, { opacity: 1, transform: "translateX(-50%) scale(1)", offset: 0.15 }, { opacity: 1, offset: 0.8 }, { opacity: 0 }], { duration: 2000 }).finished.then(() => l.remove());
+}
+async function flipG(V, g, e2, lbl, i = 0) {
+  if (lbl) label(g, lbl, i);
+  sfx("flip");
+  if (!reduceMotion) await g.animate([{ transform: "rotate(0) scale(1)" }, { transform: "rotate(90deg) scale(1.15)", offset: 0.5 }, { transform: "rotate(180deg) scale(1)" }], { duration: 700 * V.sp, easing: "ease-in-out" }).finished;
+  g.innerHTML = cardSVG(e2);
+  g.animate([{ filter: "brightness(1.9)" }, { filter: "brightness(1)" }], { duration: 450 });
+}
+const rootOf = V => V.kind === "phone" ? $("vGame") : $("vTVGame");
+const cardEl = (V, k) => rootOf(V).querySelector(`.fc[data-k="${k}"]`);
+const hideK = (V, cs) => cs.forEach(e => { const el = cardEl(V, e >> 1); if (el) (el.closest(".hcard") || el).style.visibility = "hidden"; });
+const showK = (V, cs) => cs.forEach(e => { const el = cardEl(V, e >> 1); if (el) (el.closest(".hcard") || el).style.visibility = ""; });
+function seatEl(V, id) { return V.kind === "phone" ? (id === uid ? $("handZone") : document.querySelector(`#opps [data-seat="${id}"]`)) : document.querySelector(`#tvSeats [data-seat="${id}"]`); }
+function seatBox(V, id) { const el = seatEl(V, id); return el ? box(el) : { x: innerWidth / 2, y: -60, w: 10, h: 10 }; }
+const smallAt = r => ({ x: r.x + r.w / 2 - 12, y: r.y + Math.min(r.h / 2, 30) - 18, w: 24 });
+const centreEl = V => V.kind === "phone" ? $("arena") : $("tvCenter");
+function say(V, t) { const el = V.kind === "phone" ? $("status") : $("tvSay"); el.innerHTML = t; if (V.kind === "phone") el.classList.remove("mine"); el.animate([{ opacity: 0, transform: "translateY(5px)" }, { opacity: 1, transform: "none" }], { duration: 280 }); }
+function pulse(el, t) {
+  if (!el) return; el.animate([{ transform: "scale(1)" }, { transform: "scale(1.3)" }, { transform: "scale(1)" }], { duration: 500 });
+  if (t) { const r = box(el), f = document.createElement("div"); f.className = "float"; f.textContent = t; f.style.left = r.x + r.w / 2 + "px"; f.style.top = r.y + "px"; $("fx").appendChild(f); f.animate([{ opacity: 1, transform: "translate(-50%,0)" }, { opacity: 0, transform: "translate(-50%,-26px)" }], { duration: 1100 }).finished.then(() => f.remove()); }
+}
+function shake(V, cs) { cs.forEach(e => { const el = cardEl(V, e >> 1); if (!el) return; el.animate([{ transform: "none" }, { transform: "translateX(-4px) rotate(-4deg)" }, { transform: "translateX(4px) rotate(4deg)" }, { transform: "translateX(-3px)" }, { transform: "none" }], { duration: 450 }); el.animate([{ filter: "drop-shadow(0 0 0 #ff6b6b)" }, { filter: "drop-shadow(0 0 8px #ff6b6b)" }, { filter: "drop-shadow(0 0 0 #ff6b6b)" }], { duration: 900 }); }); }
+function countEl(V, id) { const s = seatEl(V, id); return s && s.querySelector(V.kind === "phone" ? ".ct" : ".meta"); }
+const pileEl = V => V.kind === "phone" ? $("pile") : $("tvPile");
+function drawTable(V, W) { if (V.kind === "phone") drawPhone(W); else drawTV(W); }
+function drawV(V, W) { drawTable(V, W); if (V.kind === "phone") renderHand(); }
+const whoV = (V, id) => id === V.me ? "You" : esc(rawName(id));
+const sv = (V, id, verb) => id === V.me ? verb : verb + "s"; // "You play" / "Mira plays"
+const possV = (V, id) => id === V.me ? "your" : esc(rawName(id)) + "'s";
+const aSet = cs => cs.length <= 2 ? "a " + setName(cs) : setName(cs);
+async function banner(V, text, conf, ms) {
+  const c = box(centreEl(V)), b = document.createElement("div"); b.className = "ban"; b.textContent = text; b.style.left = c.x + c.w / 2 + "px"; b.style.top = c.y + c.h * 0.42 + "px";
+  if (V.kind === "tv") b.style.fontSize = "clamp(34px, 4vw, 72px)";
+  $("fx").appendChild(b);
+  if (conf && !reduceMotion) burst(c.x + c.w / 2, c.y + c.h * 0.42);
+  if (!reduceMotion) await b.animate([{ opacity: 0, transform: "translate(-50%,-50%) scale(.5)" }, { opacity: 1, transform: "translate(-50%,-50%) scale(1.08)", offset: 0.2 }, { opacity: 1, transform: "translate(-50%,-50%) scale(1)", offset: 0.3 }, { opacity: 1, offset: 0.85 }, { opacity: 0, transform: "translate(-50%,-70%)" }], { duration: (ms || 2200) * V.sp }).finished;
+  b.remove();
+}
+function burst(x, y) {
+  for (let i = 0; i < 34; i++) {
+    const p = document.createElement("div"); p.className = "bit"; p.style.background = HUE[1 + (i % 10)]; p.style.left = x + "px"; p.style.top = y + "px"; $("fx").appendChild(p);
+    const dx = (Math.random() - 0.5) * Math.min(innerWidth, 700), dy = -60 - Math.random() * 120;
+    p.animate([{ transform: "translate(0,0)", opacity: 1 }, { transform: `translate(${dx * 0.6}px,${dy}px) rotate(${Math.random() * 360}deg)`, opacity: 1, offset: 0.4 }, { transform: `translate(${dx}px,${dy + 280}px) rotate(${Math.random() * 720}deg)`, opacity: 0 }], { duration: 1600 + Math.random() * 600, easing: "cubic-bezier(.2,.6,.4,1)" }).finished.then(() => p.remove());
+  }
+}
+
+// ---------- each kind of action ----------
+async function runEv(V, ev) {
+  if (ev.k === "deal") return animDeal(V, ev);
+  const W = clone(V.shown);
+  W.out = arr(W.out); W.sets = W.sets || {}; W.counts = W.counts || {}; W.scores = W.scores || {};
+  const p = ev.p;
+  if (ev.k === "play") { say(V, `${whoV(V, p)} ${sv(V, p, "play")} ${aSet(ev.cards)}`); await toSet(V, W, p, ev.cards, p); }
+  else if (ev.k === "add") { say(V, `${whoV(V, p)} ${sv(V, p, "add")} a ${val(ev.cards[0])} to ${possV(V, ev.to)} set`); await toSet(V, W, p, ev.cards, ev.to); }
+  else if (ev.k === "take") await animTake(V, W, ev);
+  else if (ev.k === "flip") await animFlip(V, W, ev);
+  if (ev.bounce) await animBounce(V, W, ev.bounce);
+  for (const o of ev.outs) await animOut(V, W, o);
+  for (const d of ev.disc) await animDisc(V, W, d);
+  if (ev.end) { say(V, ""); await banner(V, ev.end === "game" ? "Game over!" : "Round over!", false, 1600); }
+}
+async function toSet(V, W, p, cards, owner) {
+  const fr = cards.map(e => { const el = p === V.me ? cardEl(V, e >> 1) : null; return el ? box(el) : smallAt(seatBox(V, p)); });
+  W.sets[owner] = (W.sets[owner] || []).concat(cards); W.counts[p] = Math.max(0, (W.counts[p] || 0) - cards.length);
+  if (p === V.me) { handView = handView.filter(e => !cards.includes(e)); sel = []; }
+  drawV(V, W); hideK(V, cards);
+  const gs = cards.map((e, i) => ghost(fr[i], cardSVG(e)));
+  await Promise.all(gs.map((g, i) => wait(V, i * 120).then(() => { const t = cardEl(V, cards[i] >> 1); return go(V, g, t ? box(t) : fr[i], 750, { arc: 50, grow: 1.3, ease: "cubic-bezier(.3,1.3,.5,1)" }); })));
+  sfx("snap"); showK(V, cards); gs.forEach(g => g.remove());
+  await wait(V, 400);
+}
+// lift a beaten set beside its owner, turn each card over, then send it home (or to the discards if they're out)
+async function animBounce(V, W, b) {
+  say(V, `That beats ${possV(V, b.o)} ${setName(b.cards)}`);
+  shake(V, b.cards); sfx("bounce"); await wait(V, 900);
+  const fr = b.cards.map(e => { const el = cardEl(V, e >> 1); return el ? box(el) : smallAt(seatBox(V, b.o)); });
+  delete W.sets[b.o]; drawTable(V, W);
+  const gs = b.cards.map((e, i) => ghost(fr[i], cardSVG(e)));
+  if (b.gone) {
+    say(V, `${b.o === V.me ? "You're" : esc(rawName(b.o)) + " is"} already out, so ${b.cards.length > 1 ? "they're" : "it's"} discarded`);
+    await puff(V, gs, fr); W.disc += b.cards.length; drawTable(V, W); pulse(pileEl(V).querySelector(".pn"), "+" + b.cards.length); await wait(V, 500); return;
+  }
+  const sb = seatBox(V, b.o), Wd = V.kind === "tv" ? Math.min(120, innerHeight * 0.11) : 58, sp = Wd * 0.72, tot = Wd + sp * (gs.length - 1);
+  let cx = sb.x + sb.w / 2, y;
+  if (V.kind === "phone") y = b.o === V.me ? sb.y - Wd * 1.5 + 30 : sb.y + sb.h + 10;
+  else { const c = box($("tvCenter")); cx += (c.x + c.w / 2 - cx) * 0.4; y = sb.y + sb.h / 2 + (c.y + c.h / 2 - sb.y - sb.h / 2) * 0.4 - Wd * 0.75; }
+  y = Math.max(8, Math.min(innerHeight - Wd * 1.5 - 8, y));
+  const x0 = clampX(cx - tot / 2, tot);
+  await Promise.all(gs.map((g, i) => go(V, g, { x: x0 + i * sp, y, w: Wd }, 450, { ease: "cubic-bezier(.3,1.4,.5,1)" })));
+  say(V, `${b.o === V.me ? "They go back to you" : "Back they go to " + esc(rawName(b.o))}, flipped`);
+  for (let i = 0; i < gs.length; i++) { flipG(V, gs[i], b.cards[i] ^ 1, `${val(b.cards[i])} → ${other(b.cards[i])}`, i); await wait(V, 180); }
+  await wait(V, 1200);
+  await homeCards(V, W, b.o, b.cards, gs);
+}
+async function homeCards(V, W, id, cs, gs) {
+  if (id === V.me) {
+    handView = handView.concat(cs.map(e => e ^ 1)); renderHand(); hideK(V, cs);
+    await Promise.all(gs.map((g, i) => wait(V, i * 120).then(() => { const t = cardEl(V, cs[i] >> 1); return go(V, g, t ? box(t) : smallAt(seatBox(V, id)), 650, { arc: 20 }); })));
+    showK(V, cs); gs.forEach(g => g.remove()); W.counts[id] = (W.counts[id] || 0) + cs.length;
+    cs.forEach(e => { const el = cardEl(V, e >> 1); if (el) el.animate([{ boxShadow: "0 0 0 3px #ffb547, 0 0 18px #ffb547" }, { boxShadow: "0 0 0 0 #ffb547" }], { duration: 1400 }); });
+  } else {
+    const t = smallAt(seatBox(V, id));
+    await Promise.all(gs.map((g, i) => wait(V, i * 90).then(() => go(V, g, t, 480, { o1: 0 }))));
+    gs.forEach(g => g.remove()); W.counts[id] = (W.counts[id] || 0) + cs.length; drawTable(V, W); pulse(countEl(V, id), "+" + cs.length);
+  }
+  await wait(V, 400);
+}
+async function puff(V, gs, fr) {
+  sfx("puff");
+  fr.forEach(r => { for (let i = 0; i < 8; i++) { const p = document.createElement("div"); p.className = "puff"; const s = 14 + Math.random() * 24; Object.assign(p.style, { width: s + "px", height: s + "px", left: r.x + r.w / 2 - s / 2 + "px", top: r.y + r.h / 2 - s / 2 + "px" }); $("fx").appendChild(p); p.animate([{ transform: "translate(0,0) scale(.3)", opacity: 1 }, { transform: `translate(${(Math.random() - 0.5) * 90}px,${(Math.random() - 0.5) * 90}px) scale(1.4)`, opacity: 0 }], { duration: 900 }).finished.then(() => p.remove()); } });
+  await Promise.all(gs.map((g, i) => go(V, g, { x: fr[i].x - 8, y: fr[i].y - 8, w: fr[i].w + 16 }, 500, { t1: "rotate(14deg)", o1: 0 })));
+  gs.forEach(g => g.remove());
+}
+async function animTake(V, W, ev) {
+  const q = ev.to, cs = ev.cards, p = ev.p;
+  say(V, `${whoV(V, p)} ${sv(V, p, "take")} ${possV(V, q)} ${setName(cs)}`);
+  const fr = cs.map(e => { const el = cardEl(V, e >> 1); return el ? box(el) : smallAt(seatBox(V, q)); });
+  delete W.sets[q]; drawTable(V, W);
+  const gs = cs.map((e, i) => ghost(fr[i], cardSVG(e)));
+  const c = box(centreEl(V)), gap = 16;
+  const Wd = V.kind === "tv" ? Math.min(150, innerHeight * 0.15, (c.w - 40) / cs.length - gap) : Math.max(48, Math.min(92, (c.w - 40) / cs.length - gap, (c.h - 50) / 1.5));
+  const x0 = c.x + c.w / 2 - (Wd * cs.length + gap * (cs.length - 1)) / 2, y = c.y + c.h / 2 - Wd * 0.75;
+  sfx("sweep");
+  await Promise.all(gs.map((g, i) => go(V, g, { x: x0 + i * (Wd + gap), y, w: Wd }, 650, { ease: "cubic-bezier(.3,1.2,.5,1)" })));
+  say(V, `Every card turns over on its way to ${p === V.me ? "you" : esc(rawName(p))}`);
+  await wait(V, 300);
+  for (let i = 0; i < gs.length; i++) { await flipG(V, gs[i], cs[i] ^ 1, `${val(cs[i])} → ${other(cs[i])}`); await wait(V, 300); }
+  await wait(V, 700);
+  await homeCards(V, W, p, cs, gs);
+}
+async function animFlip(V, W, ev) {
+  const p = ev.p;
+  say(V, `${whoV(V, p)} ${sv(V, p, "flip")} ${p === V.me ? "your" : "their"} hand`);
+  if (p === V.me) return handFlip(V);
+  const el = countEl(V, p); sfx("flip");
+  if (el && !reduceMotion) el.animate([{ transform: "rotateX(0)", color: "" }, { transform: "rotateX(180deg) scale(1.2)", color: "#ffb547", offset: 0.5 }, { transform: "rotateX(360deg)", color: "" }], { duration: 900 });
+  const s = seatEl(V, p); if (s && !reduceMotion) s.animate([{ boxShadow: "0 0 0 0 rgba(255,181,71,0)" }, { boxShadow: "0 0 0 3px rgba(255,181,71,0.9), 0 0 24px rgba(255,181,71,0.6)", offset: 0.5 }, { boxShadow: "0 0 0 0 rgba(255,181,71,0)" }], { duration: 1200 });
+  await wait(V, 1500);
+}
+// your own hand: each card turns over in a wave, its new face fades in, a pause, then the hand re-sorts
+async function handFlip(V) {
+  const cards = HZ.cards.slice(), fr = HZ.els.map(el => box(el.firstElementChild));
+  const gs = cards.map((e, i) => { const g = ghost(fr[i], cardSVG(e)); g.style.zIndex = 10 + i; g.style.transformOrigin = "50% 50%"; return g; });
+  handView = handView.map(e => e ^ 1); sel = []; renderHand(); HZ.els.forEach(el => { el.style.visibility = "hidden"; });
+  const nc = cards.map(e => e ^ 1), to = nc.map(e => { const t = cardEl(V, e >> 1); return t ? box(t) : fr[0]; });
+  const rank = to.map(t => to.filter(u => u.x < t.x).length);
+  sfx("flip");
+  await Promise.all(gs.map((g, i) => wait(V, i * 90).then(async () => {
+    if (!reduceMotion) await g.animate([{ transform: "rotate(0)" }, { transform: "rotate(180deg)" }], { duration: 550 * V.sp, easing: "ease-in-out" }).finished;
+    g.style.transform = "rotate(180deg)";
+    const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;transform:rotate(180deg);opacity:0"; d.innerHTML = cardSVG(nc[i]); g.appendChild(d);
+    if (!reduceMotion) await d.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 500 * V.sp, easing: "ease-out", fill: "forwards" }).finished;
+    d.style.opacity = 1;
+  })));
+  await wait(V, 1000);
+  gs.forEach((g, i) => { g.style.zIndex = 10 + rank[i]; });
+  await Promise.all(gs.map((g, i) => go(V, g, to[i], 600, { t0: "rotate(180deg)", t1: "rotate(180deg)", ease: "cubic-bezier(.3,0,.2,1)" })));
+  HZ.els.forEach(el => { el.style.visibility = ""; }); gs.forEach(g => g.remove());
+}
+async function animOut(V, W, o) {
+  W.out.push(o.p); drawTable(V, W);
+  sfx("out"); if (o.p === V.me) haptic(true);
+  const txt = o.p === V.me ? `You're out ${o.place === 1 ? "first" : "second"}!` : `${rawName(o.p)} is out ${o.place === 1 ? "first" : "second"}!`;
+  const from = W.scores[o.p] || 0;
+  await Promise.all([banner(V, txt, true, 2200), wait(V, 700).then(() => letters(V, o.p, from, o.n))]);
+  W.scores[o.p] = from + o.n; drawTable(V, W);
+  if (o.place === 1 && W.sets[o.p]) say(V, `${possV(V, o.p).replace(/^./, c => c.toUpperCase())} last set stays out until ${o.p === V.me ? "your" : "their"} turn would come round`);
+  await wait(V, 600);
+}
+async function letters(V, p, from, n) {
+  const c = box(centreEl(V)), tgt = V.kind === "phone" ? $("scoresBtn") : (seatEl(V, p) || {}).querySelector && seatEl(V, p).querySelector(".toks");
+  const ls = [..."FLIP"].slice(Math.min(from, 4), Math.min(from + n, 4));
+  await Promise.all(ls.map(async (l, i) => {
+    const d = document.createElement("div"); d.className = "ltr"; d.textContent = l;
+    d.style.left = c.x + c.w / 2 - 17 + (i - (ls.length - 1) / 2) * 44 + "px"; d.style.top = c.y + c.h * 0.62 + "px"; $("fx").appendChild(d);
+    if (!reduceMotion) await d.animate([{ transform: "scale(0) rotate(-180deg)" }, { transform: "scale(1.2) rotate(0)", offset: 0.6 }, { transform: "scale(1)" }], { duration: 500, delay: i * 180, fill: "backwards", easing: "ease-out" }).finished;
+    await wait(V, 500);
+    if (tgt) { const t = box(tgt); await go(V, d, { x: t.x + t.w / 2 - 17, y: t.y + t.h / 2 - 17, w: 34 }, 700, { arc: 40, t1: "scale(.5)", o1: 0.3 }); pulse(tgt); sfx("tally"); }
+    d.remove();
+  }));
+}
+async function animDisc(V, W, d) {
+  const cs = d.cards, out = W.out.includes(d.p);
+  say(V, out ? `${possV(V, d.p).replace(/^./, c => c.toUpperCase())} last set is cleared away` : `${possV(V, d.p).replace(/^./, c => c.toUpperCase())} ${setName(cs)} survived the round: discarded`);
+  const fr = cs.map(e => { const el = cardEl(V, e >> 1); return el ? box(el) : smallAt(seatBox(V, d.p)); });
+  delete W.sets[d.p]; drawTable(V, W);
+  const gs = cs.map((e, i) => ghost(fr[i], cardSVG(e)));
+  const pb = box(pileEl(V).querySelector(".stackp"));
+  await Promise.all(gs.map((g, i) => wait(V, i * 110).then(() => go(V, g, { x: pb.x, y: pb.y, w: pb.w }, 650, { arc: 20, t1: `rotate(${i % 2 ? -8 : 7}deg)` }).then(() => { g.classList.add("back"); g.innerHTML = ""; }))));
+  sfx("snap"); await wait(V, 150); gs.forEach(g => g.remove());
+  W.disc = (W.disc || 0) + cs.length; drawTable(V, W); pulse(pileEl(V).querySelector(".pn"), "+" + cs.length);
+  await wait(V, 450);
+}
+async function animDeal(V, ev) {
+  const W = clone(ev.after), o = order(), per = ev.per || 0;
+  W.out = arr(W.out); W.sets = {};
+  const W0 = Object.assign(clone(W), { counts: Object.fromEntries(o.map(id => [id, 0])), sets: {}, disc: 0, out: [], turn: null });
+  if (V.kind === "phone") { handView = []; sel = []; }
+  drawV(V, W0); say(V, `Round ${room.state.round || 1}: dealing`);
+  const c = box(centreEl(V)), dk = { x: c.x + c.w / 2 - 30, y: c.y + c.h / 2 - 45, w: 60 };
+  const deck = ghost(dk, "", true);
+  let mine = [];
+  if (V.kind === "phone" && V.me && (W.counts[V.me] || 0) > 0) {
+    for (let t = 0; t < 30 && myHand.length !== W.counts[V.me]; t++) await wait(V, 50);
+    mine = sortHand(myHand); handView = mine.slice(); renderHand(); hideK(V, mine);
+  }
+  sfx("deal");
+  const gap = Math.max(22, 1700 / Math.max(1, per * o.length)), jobs = []; let j = 0;
+  for (let r = 0; r < per; r++) for (const id of o) {
+    const myCard = id === V.me ? mine[r] : null;
+    const jj = j;
+    jobs.push(wait(V, j++ * gap).then(async () => {
+      if (jj % 8 === 0) sfx("deal");
+      const g = ghost(dk, "", true);
+      if (myCard != null) {
+        const t = cardEl(V, myCard >> 1);
+        await go(V, g, t ? box(t) : dk, 420);
+        if (!reduceMotion) await g.animate([{ transform: "scaleX(1)" }, { transform: "scaleX(0)" }], { duration: 110 }).finished;
+        g.className = "fc"; g.innerHTML = cardSVG(myCard);
+        if (!reduceMotion) await g.animate([{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }], { duration: 110 }).finished;
+        showK(V, [myCard]); g.remove();
+      } else {
+        await go(V, g, smallAt(seatBox(V, id)), 420, { o1: 0.5 }); g.remove();
+        W0.counts[id] = (W0.counts[id] || 0) + 1; const ce = countEl(V, id); if (ce) ce.innerHTML = V.kind === "phone" ? `<i class="mini"></i>${W0.counts[id]} cards` : `${W0.counts[id]} cards`;
+      }
+    }));
+  }
+  await Promise.all(jobs); deck.remove();
+  const star = W.star;
+  W0.counts = W.counts; W0.turn = W.turn; drawTable(V, W0);
+  if (star) { say(V, `${whoV(V, star)} ${star === V.me ? "have" : "has"} the ★ card, so ${star === V.me ? "you start" : "they start"}`); pulse(seatEl(V, star)); }
+  await wait(V, 1300);
+}
+
+// ---------- TV: the shared table ----------
+function renderTV() {
+  const s = room.state;
+  if (s.phase === "lobby") { show("vTVLobby"); presReset(viewFor("tv")); $("tvOverlay").innerHTML = ""; $("tvOverlay").dataset.key = ""; return renderTVLobby(); }
+  show("vTVGame");
+  $("tvRound").textContent = `Round ${s.round || 1}`; $("tvCode2").textContent = code;
+  const V = viewFor("tv"); syncPres(V);
+  if (!V.busy) drawTV(V.shown);
+  paintTimers();
+}
+function renderTVLobby() {
+  const url = location.origin + location.pathname + "?room=" + code;
+  $("tvCode").textContent = code; $("tvUrl").textContent = url.replace(/^https?:\/\//, "");
+  if ($("tvQr").dataset.u !== url) { $("tvQr").dataset.u = url; $("tvQr").innerHTML = ""; try { new QRCode($("tvQr"), { text: url, width: Math.round(Math.min(innerHeight * 0.3, 300)), height: Math.round(Math.min(innerHeight * 0.3, 300)), colorDark: "#22162e", colorLight: "#ffffff" }); } catch (e) {} }
+  const ids = order(), n = ids.length;
+  $("tvCount").textContent = `Players · ${n} of ${MAX_P}`;
+  $("tvPlist").innerHTML = n ? ids.map(id => { const p = players()[id]; return `<div class="tvp">${avatar(p, 40)}<span>${esc(p.name)}${p.bot ? '<span class="botb">BOT</span>' : ""}</span>${id === lead() ? '<span class="host">LEAD</span>' : ""}${p.bot ? `<button class="xbtn" onclick="removeBot('${id}')" aria-label="Remove ${esc(p.name)}">✕</button>` : ""}</div>`; }).join("") : `<div class="tvempty">Waiting for players to join…</div>`;
+  const sync = (el, v) => { if (document.activeElement !== el) { if (el.type === "checkbox") el.checked = v; else el.value = String(v); } };
+  sync($("tvLadder"), setting("ladder", true) !== false); sync($("tvTimer"), setting("timer", 0)); sync($("tvBots"), setting("bots", "hard"));
+  $("tvAddBot").disabled = n >= MAX_P;
+  $("tvStart").disabled = n < MIN_P;
+  $("tvHint").textContent = n < MIN_P ? `Need at least ${MIN_P} players (${MIN_P - n} more). Add computer players to fill seats.` : `${n} players · ${deckFor(n).length / n} cards each. ${esc(rawName(lead()))} can also deal from their phone.`;
+}
+$("tvLadder").onchange = () => roomRef.child("settings").update({ ladder: $("tvLadder").checked });
+$("tvTimer").onchange = () => roomRef.child("settings").update({ timer: +$("tvTimer").value });
+$("tvBots").onchange = () => roomRef.child("settings").update({ bots: $("tvBots").value });
+$("tvAddBot").onclick = () => brainAddBot();
+$("tvStart").onclick = async () => { $("tvStart").disabled = true; await startGame(); };
+function drawTV(W) {
+  if (!W || !room) return;
+  const o = order(), n = o.length;
+  $("tvSeats").innerHTML = o.map((id, i) => {
+    const p = players()[id] || {}, a = Math.PI / 2 + (i * 2 * Math.PI) / n, x = 50 + 40 * Math.cos(a), y = 50 + 36 * Math.sin(a);
+    const cs = W.sets[id] || [], isOut = W.out.includes(id), place = W.out.indexOf(id);
+    return `<div class="seat ${W.turn === id ? "turn" : ""}" data-seat="${id}" style="left:${x.toFixed(1)}%;top:${y.toFixed(1)}%;flex-direction:${y > 55 ? "column-reverse" : "column"}">
+      <div class="nm">${avatar(p, 30)}${esc(p.name)}${p.bot ? '<span class="botb">BOT</span>' : ""}</div>
+      <div class="meta">${isOut ? `<span class="outb">Out ${place === 0 ? "first" : "second"}!</span>` : `${W.counts[id] || 0} cards`} ${W.turn === id ? '<span class="tleft"></span>' : ""}</div>
+      ${toksHTML(Math.min(4, W.scores[id] || 0))}
+      <div class="tset">${cs.length ? cs.map(e => cardHTML(e, isOut ? "prot" : "")).join("") : '<span class="none">no set out</span>'}</div>
+      ${p.online === false && !p.bot ? '<span class="off">AWAY</span>' : ""}</div>`;
+  }).join("");
+  $("tvPileN").textContent = `${W.disc || 0} discarded`; $("tvPile").classList.toggle("empty", !W.disc);
+  $("tvLadder").innerHTML = ladderHTML(W);
+  if (!(VIEWS.tv && VIEWS.tv.busy)) { $("tvStatus").textContent = room.state.phase === "play" && W.turn ? `${rawName(W.turn)}'s turn` : ""; }
+}
+function tvOverlay(s) {
+  const h = $("tvOverlay"), kind = !s ? "" : (s.phase === "roundEnd" || s.phase === "gameOver") ? s.phase : "", key = kind + ":" + (s ? s.seq : "");
+  if (h.dataset.key === key) return;
+  h.dataset.key = key;
+  if (!kind) { h.innerHTML = ""; return; }
+  const over = kind === "gameOver", sc = room.scores || {}, out = arr(s.out), win = order().find(id => (sc[id] || 0) >= WIN);
+  const rows = order().slice().sort((a, b) => (sc[b] || 0) - (sc[a] || 0)).map(id => {
+    const p = players()[id] || {}, pl = out.indexOf(id);
+    return `<div class="tvrow">${avatar(p, 44)}<span class="sp">${esc(p.name)}<small>${pl === 0 ? "out first · +2" : pl === 1 ? "out second · +1" : ""}</small></span>${toksHTML(Math.min(4, sc[id] || 0), pl === 0 ? 2 : pl === 1 ? 1 : 0)}</div>`;
+  }).join("");
+  h.innerHTML = `<div class="tvov"><div class="tvbox"><h2>${over ? `${esc(rawName(win))} spells FLIP!` : `Round ${s.round} over`}</h2><div class="sub">First to spell F‑L‑I‑P wins.</div><div class="tvrows">${rows}</div><div class="tvnext" id="tvNext"></div>
+    ${over ? `<button class="btn" style="max-width:320px;margin:2vh auto 0" onclick="backToLobby()">Play again</button>` : ""}</div></div>`;
+  h.querySelector(".tvrows").style.fontSize = "";
+  if (over) { setTimeout(() => { sfx("fanfare"); confetti(); }, 900); }
+  tvCountdown();
+}
+function tvCountdown() {
+  const el = $("tvNext"); if (!el || !room || !room.state) return;
+  const s = room.state;
+  if (s.phase === "roundEnd") el.textContent = `Round ${s.round + 1} deals in ${Math.max(0, Math.ceil(((s.turnAt || s.at) + NEXT_MS - serverNow()) / 1000))}s`;
+  else if (s.phase === "gameOver") el.textContent = `${rawName(lead())} can also start a new game from their phone`;
+}
+setInterval(() => { if (isTV && room && room.state && room.state.phase === "roundEnd") tvCountdown(); }, 500);
+window.addEventListener("resize", () => { if (isTV && room && room.state && VIEWS.tv && !VIEWS.tv.busy) drawTV(VIEWS.tv.shown); });
+
+// ---------- sound: synthesised in the browser, no audio files ----------
+// with a TV, only the TV makes noise; without one, every device does
+let actx = null, muted = !!load("mute");
+const audioOn = () => !muted && !!actx && !!room && (isTV || !room.tv);
+function unlockAudio() { try { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === "suspended") actx.resume(); } catch (e) {} }
+document.addEventListener("pointerdown", unlockAudio, { capture: true });
+document.addEventListener("keydown", unlockAudio, { capture: true });
+function tone(f, t0, dur, type, vol, f2) {
+  const o = actx.createOscillator(), g = actx.createGain(); o.type = type || "sine"; o.frequency.setValueAtTime(f, t0);
+  if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + dur);
+  g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol || 0.2, t0 + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g).connect(actx.destination); o.start(t0); o.stop(t0 + dur + 0.05);
+}
+function noise(t0, dur, f1, f2, vol, q) {
+  const len = Math.ceil(actx.sampleRate * dur), b = actx.createBuffer(1, len, actx.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+  const src = actx.createBufferSource(), f = actx.createBiquadFilter(), g = actx.createGain();
+  src.buffer = b; f.type = "bandpass"; f.Q.value = q || 1; f.frequency.setValueAtTime(f1, t0); f.frequency.exponentialRampToValueAtTime(f2, t0 + dur); g.gain.value = vol || 0.3;
+  src.connect(f).connect(g).connect(actx.destination); src.start(t0);
+}
+function sfx(name) {
+  if (!audioOn()) return;
+  const t = actx.currentTime;
+  try {
+    if (name === "snap") { noise(t, 0.09, 2400, 900, 0.5, 1.2); tone(180, t, 0.08, "triangle", 0.15, 90); }
+    else if (name === "sweep") noise(t, 0.6, 400, 3000, 0.28, 0.7);
+    else if (name === "flip") { noise(t, 0.25, 900, 3200, 0.22, 0.9); tone(520, t + 0.05, 0.18, "sine", 0.06, 780); }
+    else if (name === "bounce") { tone(220, t, 0.18, "triangle", 0.2, 120); tone(160, t + 0.12, 0.25, "triangle", 0.16, 90); }
+    else if (name === "puff") noise(t, 0.5, 1800, 300, 0.3, 0.6);
+    else if (name === "deal") for (let i = 0; i < 6; i++) noise(t + i * 0.06, 0.05, 3000, 1500, 0.18, 1.5);
+    else if (name === "turn") { tone(660, t, 0.25, "sine", 0.12); tone(990, t + 0.12, 0.35, "sine", 0.1); }
+    else if (name === "out") [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * 0.11, i === 3 ? 0.8 : 0.22, "triangle", 0.15));
+    else if (name === "tally") tone(880, t, 0.1, "square", 0.05);
+    else if (name === "bell") [0, 1.1].forEach(d => [440, 1106, 1760].forEach((f, i) => tone(f, t + d, 2.2, "sine", [0.22, 0.08, 0.05][i])));
+    else if (name === "fanfare") [[392, 0], [523, 0.15], [659, 0.3], [784, 0.45], [659, 0.65], [784, 0.8]].forEach(([f, d]) => tone(f, t + d, d === 0.8 ? 1 : 0.2, "square", 0.06));
+  } catch (e) {}
+}
+function toggleMute() { muted = !muted; store("mute", muted); paintMute(); if (!muted) { unlockAudio(); setTimeout(() => sfx("turn"), 50); } }
+function paintMute() { document.querySelectorAll(".mutebtn").forEach(b => { b.textContent = b.classList.contains("short") ? (muted ? "🔇" : "🔊") : (muted ? "Sound off" : "Sound on"); b.setAttribute("aria-label", muted ? "Sound is off, turn on" : "Sound is on, turn off"); }); }
+paintMute();
+
+// ---------- turn timer ----------
+function timeLeft() {
+  if (!room || !room.state || !timerMs()) return null;
+  const s = room.state; if (s.phase !== "play" || !s.turn || isBot(s.turn)) return null;
+  const from = s.turnAt || s.at || 0, now = serverNow(), left = now < from ? timerMs() : from + timerMs() - now;
+  return { who: s.turn, t: Math.max(0, Math.ceil(left / 1000)) };
+}
+let buzzedSeq = null;
+function paintTimers() {
+  const L = timeLeft();
+  document.querySelectorAll(".tleft").forEach(el => {
+    const txt = !L ? "" : el.id === "tleftTop" ? (L.who === uid ? `${L.t}s left` : "") : `${L.t}s`;
+    if (el.textContent !== txt) el.textContent = txt;
+    el.classList.toggle("low", !!L && L.t <= 10);
+  });
+  if (L && L.who === uid && L.t <= 10 && L.t > 0 && buzzedSeq !== room.state.seq) { buzzedSeq = room.state.seq; if (navigator.vibrate) navigator.vibrate([60, 60, 60]); sfx("turn"); }
+}
+setInterval(paintTimers, 500);
+
+// ---------- test mode: hand-feel settings, kept on this device ----------
+function openFeel() {
+  const test = !!load("test");
+  openSheet("feel", `<h2>Test mode</h2><div class="sub">Hand feel on this device. Changes apply straight away; try them in a game, even against computer players.</div>
+    <div class="feelrow"><label for="fRes">Resistance</label><input type="range" id="fRes" min="0" max="0.45" step="0.01" value="${FEEL.res}"><output id="oRes">${FEEL.res.toFixed(2)}</output></div>
+    <div class="feelrow"><label for="fMag">Magnify</label><input type="range" id="fMag" min="1.1" max="1.6" step="0.05" value="${FEEL.mag}"><output id="oMag">${FEEL.mag.toFixed(2)}×</output></div>
+    <div class="feelrow"><label for="fEase">Ease</label><input type="range" id="fEase" min="0.08" max="0.6" step="0.02" value="${FEEL.ease}"><output id="oEase">${FEEL.ease.toFixed(2)}</output></div>
+    <label class="toggle" style="margin:12px 0"><input type="checkbox" id="fShow" ${test ? "checked" : ""}> Show this cog during games</label>
+    <div class="stack"><button class="btn ghost" id="fReset">Back to defaults (0.25 · 1.30× · 0.22)</button><button class="btn ghost" id="fHap">Test haptic</button><button class="btn" onclick="closeSheet()">Done</button></div>`, true);
+  const bind = (id, out, k, fmt) => { $(id).oninput = () => { FEEL[k] = +$(id).value; $(out).textContent = fmt(FEEL[k]); store("feel", FEEL); sizeHandZone(); startHandLoop(); }; };
+  bind("fRes", "oRes", "res", v => v.toFixed(2)); bind("fMag", "oMag", "mag", v => v.toFixed(2) + "×"); bind("fEase", "oEase", "ease", v => v.toFixed(2));
+  $("fShow").onchange = () => { store("test", $("fShow").checked); $("cogBtn").classList.toggle("hidden", !$("fShow").checked); };
+  $("fReset").onclick = () => { FEEL = Object.assign({}, FEEL_DEFAULT); store("feel", FEEL); sizeHandZone(); openFeel(); };
+  $("fHap").onclick = () => haptic(true);
+}
+$("cogBtn").classList.toggle("hidden", !load("test"));
+</script>
+</body>
+</html>
