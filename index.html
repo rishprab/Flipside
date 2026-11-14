@@ -85,44 +85,50 @@
   .topbar .sp { flex: 1; }
   .pill { background: rgba(255,255,255,0.06); border: 1px solid var(--line); border-radius: 20px; padding: 6px 11px; font-weight: 800; font-size: 0.85rem; color: var(--ink); }
   .pill.acc { background: var(--acc); border-color: var(--acc); color: #2a1a08; }
-  .opps { display: flex; gap: 5px; }
-  .opp { flex: 1 1 0; min-width: 0; position: relative; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 3px 6px; border-radius: 14px; background: rgba(255,255,255,0.06); border: 2px solid transparent; transition: border-color 0.3s, background 0.3s; }
-  .opp.turn { border-color: var(--turn); background: rgba(127,211,255,0.1); }
-  .opp.isout { opacity: 0.85; }
+  /* the middle of the screen is a tabletop: rivals sit round it, their sets laid out in front of them */
+  .opps { position: absolute; inset: 0; pointer-events: none; }
+  .opp { position: absolute; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 5px 4px 6px; border-radius: 16px; background: rgba(22,13,31,0.45); border: 2px solid transparent; transition: border-color 0.3s, box-shadow 0.3s; pointer-events: auto; }
+  .opp.turn { border-color: var(--turn); box-shadow: 0 0 18px rgba(127,211,255,0.3); }
   .opp.tap { cursor: pointer; }
   .opp .nm { font-weight: 800; font-size: 0.85rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
   .opp .dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
-  .opp .ct { color: var(--muted); font-size: 0.75rem; font-weight: 700; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
-  .opp .ct .mini { display: inline-block; width: 9px; height: 13px; border-radius: 2px; background: repeating-linear-gradient(45deg, #5b3f7a 0 3px, #4a3166 3px 6px); box-shadow: inset 0 0 0 1px rgba(246,239,230,0.6); }
-  .opp .outb { color: var(--acc); font-weight: 800; font-size: 0.75rem; }
-  .opp .off { position: absolute; top: -6px; right: -2px; font-size: 0.58rem; background: #7a2a2a; color: #fff; border-radius: 6px; padding: 1px 4px; font-weight: 800; }
-  .oset { display: flex; justify-content: center; min-height: 52px; align-items: flex-end; margin-top: 3px; }
-  .oset .fc { --w: 34px; margin-left: -16px; border-radius: 4px; }
+  .opp .ct b { color: var(--ink); font-size: 0.95rem; }
+  .opp .ct { color: var(--muted); font-size: 0.78rem; font-weight: 800; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; min-height: 26px; }
+  .fan { position: relative; display: inline-block; height: 24px; }
+  .fan i { position: absolute; bottom: 0; width: 15px; height: 22px; border-radius: 3px; transform-origin: 50% 120%; background: repeating-linear-gradient(45deg, #5b3f7a 0 3px, #4a3166 3px 6px); box-shadow: inset 0 0 0 1px rgba(246,239,230,0.7), 0 1px 3px rgba(0,0,0,0.5); }
+  .opp .outb { color: var(--acc); font-weight: 800; font-size: 0.8rem; min-height: 26px; display: flex; align-items: center; }
+  .opp .off { position: absolute; top: -7px; right: -4px; font-size: 0.58rem; background: #7a2a2a; color: #fff; border-radius: 6px; padding: 1px 4px; font-weight: 800; }
+  .oset { display: flex; justify-content: center; align-items: flex-end; min-height: calc(var(--sw, 50px) * 1.5); margin-top: 2px; }
+  .oset .fc { --w: var(--sw, 50px); margin-left: var(--ov, -24px); border-radius: 5px; }
   .oset .fc:first-child { margin-left: 0; }
+  .oset .empty { width: var(--sw, 50px); height: calc(var(--sw, 50px) * 1.5); border-radius: 6px; border: 2px dashed rgba(255,255,255,0.1); }
   .opp.tap .oset { animation: setglow 1.8s ease-in-out infinite; }
-  @keyframes setglow { 50% { filter: drop-shadow(0 0 6px var(--acc)); } }
+  @keyframes setglow { 50% { filter: drop-shadow(0 0 7px var(--acc)); } }
   .fc.prot { box-shadow: 0 0 0 2px var(--acc), 0 0 12px var(--acc); }
   .tleft { font-weight: 800; font-size: 0.72rem; color: #22162e; background: var(--turn); border-radius: 10px; padding: 1px 7px; white-space: nowrap; }
   .tleft:empty { display: none; }
   .tleft.low { background: var(--bad); }
-  .arena { position: relative; flex: 1 1 auto !important; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; margin: 6px 0 2px; border-radius: 22px; background: radial-gradient(ellipse, rgba(255,181,71,0.06), rgba(0,0,0,0) 70%); border: 1px solid rgba(255,181,71,0.12); }
-  .status { text-align: center; font-weight: 800; font-size: 1rem; min-height: 1.4em; padding: 0 12px; }
+  .arena { position: relative; flex: 1 1 auto !important; min-height: 0; margin: 2px 0 2px; border-radius: 34px; background: radial-gradient(ellipse at 50% 45%, #3f2b56 0%, #2e1f40 60%, #24182f 100%); border: 2px solid rgba(255,181,71,0.22); box-shadow: inset 0 0 40px rgba(0,0,0,0.45), 0 6px 20px rgba(0,0,0,0.3); }
+  .arena.sides .tmid { width: 44%; }
+  .tmid { position: absolute; left: 50%; top: 66%; transform: translate(-50%, -50%); width: 60%; display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: none; }
+  .status { text-align: center; font-weight: 800; font-size: 0.95rem; line-height: 1.25; min-height: 1.3em; text-wrap: balance; }
   .status.mine { color: var(--acc); }
-  .pile { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 40px; }
+  .pile { position: absolute; left: 14px; bottom: 10px; width: 40px; }
   .pile .stackp { position: relative; width: 40px; height: 60px; }
   .pile .stackp .fc { --w: 40px; position: absolute; left: 0; top: 0; }
   .pile .stackp .fc:nth-child(2) { transform: rotate(-6deg); } .pile .stackp .fc:nth-child(3) { transform: rotate(5deg); }
   .pile .pn { display: block; text-align: center; font-size: 0.7rem; color: var(--muted); font-weight: 700; margin-top: 4px; white-space: nowrap; }
   .pile.empty .stackp { opacity: 0.25; }
-  .myset { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-  .myset .set { display: flex; min-height: 60px; }
-  .myset .set .fc { --w: 50px; margin-left: -20px; }
+  .myset { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .myset .set { display: flex; min-height: 20px; }
+  .myset .set .fc { --w: var(--msw, 54px); margin-left: calc(var(--msw, 54px) * -0.45); }
   .myset .set .fc:first-child { margin-left: 0; }
   .myset .mylab { font-size: 0.75rem; color: var(--muted); font-weight: 700; min-height: 1em; }
   .ladder { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; padding: 0 8px; min-height: 22px; }
+  .arena .ladder { position: absolute; right: 10px; bottom: 10px; flex-direction: column; align-items: flex-end; gap: 3px; padding: 0; min-height: 0; }
   .ladder span { border: 1px solid var(--line); border-radius: 8px; padding: 1px 7px; font-size: 0.72rem; font-weight: 700; color: var(--muted); white-space: nowrap; }
   .ladder span b { color: var(--ink); }
-  .hurry { position: absolute; right: 12px; top: 8px; font-size: 0.7rem; font-weight: 800; color: var(--muted); opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .hurry { font-size: 0.7rem; font-weight: 800; color: var(--muted); opacity: 0; transition: opacity 0.3s; pointer-events: none; }
   .hurry.on { opacity: 1; }
   .verdict { height: 26px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.82rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); padding: 0 6px; }
   .verdict.good { color: var(--good); } .verdict.bad { color: var(--bad); }
@@ -229,7 +235,7 @@
   @media (max-height: 760px), (max-width: 360px) { :root { --cw: 80px; } }
   @media (max-height: 700px) { :root { --cw: 76px; } }
   .opps:has(.opp:nth-child(4)) .botb { display: none; }
-  @media (max-height: 620px) { :root { --cw: 60px; } .oset { min-height: 44px; } .oset .fc { --w: 28px; margin-left: -13px; } .myset .set .fc { --w: 40px; } .myset .set { min-height: 48px; } }
+  @media (max-height: 620px) { :root { --cw: 60px; } }
 </style>
 </head>
 <body>
@@ -289,13 +295,12 @@
     <button class="pill mutebtn short" onclick="toggleMute()">🔊</button>
     <button class="pill acc" id="scoresBtn">Score</button>
   </div>
-  <div class="opps" id="opps"></div>
   <div class="arena" id="arena">
-    <div class="status" id="status"></div>
+    <div class="tmid"><div class="status" id="status"></div><span class="hurry" id="hurry">Tap to hurry</span></div>
     <div class="pile" id="pile"><div class="stackp"><div class="fc back"></div><div class="fc back"></div><div class="fc back"></div></div><span class="pn" id="pileN"></span></div>
     <div class="myset"><div class="set" id="mySet"></div><span class="mylab" id="myLab"></span></div>
     <div class="ladder" id="ladder"></div>
-    <span class="hurry" id="hurry">Tap to hurry</span>
+    <div class="opps" id="opps"></div>
   </div>
   <div class="verdict" id="verdict"></div>
   <div class="handwrap" id="handZone" tabindex="0" aria-label="Your hand. Slide along it to browse; lift to pick a card. Arrow keys move, Space picks, Enter plays."><div class="hand" id="hand"></div></div>
@@ -903,18 +908,39 @@ function statusText(W) {
   if (W.out.includes(uid) && !isTV) return W.turn === uid ? "" : `You're out · ${esc(rawName(W.turn))}'s turn`;
   return W.turn === uid && !isTV ? "Your turn" : `${esc(rawName(W.turn))}'s turn`;
 }
+// a rival's hand: a little fan of card backs, plus the count
+function phoneCt(n) {
+  const k = Math.min(n, 12), spread = Math.min(7, 40 / Math.max(1, k)), w = 15 + Math.max(0, k - 1) * 4.2;
+  const fan = Array.from({ length: k }, (_, i) => `<i style="left:${(i * 4.2).toFixed(1)}px;transform:rotate(${((i - (k - 1) / 2) * spread).toFixed(1)}deg)"></i>`).join("");
+  return `<span class="fan" style="width:${w.toFixed(0)}px">${fan}</span><b aria-label="${n} cards in hand">${n}</b>`;
+}
 function drawPhone(W) {
   if (!W) return;
   const o = order(), me = o.indexOf(uid), others = o.slice(me + 1).concat(o.slice(0, Math.max(0, me)));
   const act = canAct();
-  $("opps").innerHTML = others.map(id => {
-    const p = players()[id] || {}, cs = W.sets[id] || [], isOut = W.out.includes(id), place = W.out.indexOf(id);
-    const tap = act && cs.length && !isOut;
-    return `<div class="opp ${W.turn === id ? "turn" : ""} ${isOut ? "isout" : ""} ${tap ? "tap" : ""}" data-seat="${id}" ${tap ? `onclick="openSetSheet('${id}')" role="button" aria-label="${esc(p.name)}'s set: add to it or take it"` : ""}>
+  const A = $("arena"), AW = A.clientWidth || 360, AH = A.clientHeight || 380, n = others.length;
+  // seats in turn order, starting on your left and going round the far side of the table
+  // seats along the far side of the table, each with its own strip of table so nothing overlaps
+  // seats along the far side of the table, each with its own strip so nothing overlaps;
+  // four rivals can sit two across the back and one down each side, if that leaves room for bigger cards
+  let zone = Math.min(190, AW / Math.max(1, n) - 6), zones = others.map(() => zone);
+  let SEATS = others.map((_, i) => { const x = (i + 0.5) / n; return [x, 0.03 + 0.16 * Math.abs(x - 0.5) * 2]; });
+  let sw = Math.max(32, Math.min(76, (zone - 8) / 1.5, (AH * 0.56 - 62) / 1.5)), wide = false;
+  if (n === 4) {
+    const swB = Math.min(76, (AW * 0.26 - 8) / 1.5, (AH * 0.4 - 70) / 1.5);
+    if (swB > sw + 2) { sw = swB; wide = true; SEATS = [[0.13, 0.42], [0.31, 0.02], [0.69, 0.02], [0.87, 0.42]]; zones = [AW * 0.26, AW * 0.4, AW * 0.4, AW * 0.26]; }
+  }
+  sw = Math.round(sw); A.classList.toggle("sides", wide);
+  A.style.setProperty("--msw", Math.round(Math.max(40, Math.min(60, sw + 4))) + "px");
+  $("opps").innerHTML = others.map((id, i) => {
+    const p = players()[id] || {}, cs = W.sets[id] || [], isOut = W.out.includes(id), place = W.out.indexOf(id), [x, y] = SEATS[i] || [0.5, 0], zone = zones[i] || 100;
+    const tap = act && cs.length && !isOut, k = cs.length;
+    const step = k > 1 ? Math.min(sw * 0.5, (zone - 10 - sw) / (k - 1)) : 0;
+    return `<div class="opp ${W.turn === id ? "turn" : ""} ${isOut ? "isout" : ""} ${tap ? "tap" : ""}" data-seat="${id}" style="left:${(x * 100).toFixed(1)}%;top:${(y * AH).toFixed(0)}px;max-width:${zone.toFixed(0)}px;--sw:${sw}px;--ov:${(step - sw).toFixed(1)}px" ${tap ? `onclick="openSetSheet('${id}')" role="button" aria-label="${esc(p.name)}'s set: add to it or take it"` : ""}>
       <div class="nm"><span class="dot" style="background:${p.color || "#8EC4F7"}"></span>${esc(p.name)}${p.bot ? '<span class="botb">BOT</span>' : ""}</div>
-      ${isOut ? `<div class="outb">Out ${place === 0 ? "first" : "second"}!</div>` : `<div class="ct"><i class="mini"></i>${W.counts[id] || 0} card${W.counts[id] === 1 ? "" : "s"}${W.turn === id ? ' <span class="tleft"></span>' : ""}</div>`}
+      ${isOut ? `<div class="outb">Out ${place === 0 ? "first" : "second"}!</div>` : `<div class="ct">${phoneCt(W.counts[id] || 0)}${W.turn === id ? '<span class="tleft"></span>' : ""}</div>`}
       ${p.online === false && !p.bot ? '<span class="off">AWAY</span>' : ""}
-      <div class="oset">${cs.map(e => cardHTML(e, isOut ? "prot" : "")).join("")}</div></div>`;
+      <div class="oset">${k ? cs.map(e => cardHTML(e, isOut ? "prot" : "")).join("") : '<span class="empty"></span>'}</div></div>`;
   }).join("");
   const mine = W.sets[uid] || [];
   $("mySet").innerHTML = mine.map(e => cardHTML(e, W.out.includes(uid) ? "prot" : "")).join("");
@@ -1075,9 +1101,10 @@ function openSetSheet(q) {
   const adds = mine.map(e => {
     const chk = addCheck(W.sets, W.out, uid, e, q);
     const why = chk.ok ? (chk.beats ? `Makes ${cs.length + 1} ${v}s, beating ${poss(chk.beats)} ${val(W.sets[chk.beats][0])}s: ${W.out.includes(chk.beats) ? "they're discarded" : "they go back, flipped"}` : `Makes ${cs.length + 1} ${v}s for ${esc(rawName(q))}`) : chk.why;
-    return `<button class="opt ${chk.ok ? "go" : ""}" ${chk.ok ? `onclick="submitMove({a:'add',cards:[${e}],to:'${q}'})"` : "disabled"}><span class="rowc">${cardHTML(e)}<span>Add your ${v}<small>${why}</small></span></span></button>`;
+    const tag = mine.length > 1 ? ` (the one that turns into ${other(e)})` : "";
+    return `<button class="opt ${chk.ok ? "go" : ""}" ${chk.ok ? `onclick="submitMove({a:'add',cards:[${e}],to:'${q}'})"` : "disabled"}><span class="rowc">${cardHTML(e)}<span>Add your ${v}${tag}<small>${why}</small></span></span></button>`;
   }).join("");
-  openSheet("set", `<h2>${esc(rawName(q))}'s ${setName(cs)}</h2><div class="sub">${mine.length ? `You hold ${mine.length > 1 ? "some" : "a"} ${v}, so you can add one, or take the set.` : `Take it into your hand, or close this.`}</div>
+  openSheet("set", `<h2>${esc(rawName(q))}'s ${setName(cs)}</h2><div class="sub">${mine.length ? `You hold ${mine.length > 1 ? "more than one" : "a"} ${v}, so you can add one, or take the set.` : `Take it into your hand, or close this.`}</div>
     ${adds}
     <button class="opt" onclick="submitMove({a:'take',to:'${q}'})"><span class="rowc">${cs.map(e => cardHTML(e)).join("")}<span>Take the ${cs.length > 1 ? "set" : "card"}<small>${cs.length > 1 ? "They come" : "It comes"} to your hand flipped: ${cs.map(e => other(e)).join(", ")}</small></span></span></button>
     <button class="btn ghost" onclick="closeSheet()">Cancel</button>`);
@@ -1297,7 +1324,7 @@ async function animBounce(V, W, b) {
   }
   const sb = seatBox(V, b.o), Wd = V.kind === "tv" ? Math.min(120, innerHeight * 0.11) : 58, sp = Wd * 0.72, tot = Wd + sp * (gs.length - 1);
   let cx = sb.x + sb.w / 2, y;
-  if (V.kind === "phone") y = b.o === V.me ? sb.y - Wd * 1.5 + 30 : sb.y + sb.h + 10;
+  if (V.kind === "phone") y = b.o === V.me ? sb.y - Wd * 1.5 + 30 : sb.y + sb.h * 0.55;
   else { const c = box($("tvCenter")); cx += (c.x + c.w / 2 - cx) * 0.4; y = sb.y + sb.h / 2 + (c.y + c.h / 2 - sb.y - sb.h / 2) * 0.4 - Wd * 0.75; }
   y = Math.max(8, Math.min(innerHeight - Wd * 1.5 - 8, y));
   const x0 = clampX(cx - tot / 2, tot);
@@ -1436,7 +1463,7 @@ async function animDeal(V, ev) {
         showK(V, [myCard]); g.remove();
       } else {
         await go(V, g, smallAt(seatBox(V, id)), 420, { o1: 0.5 }); g.remove();
-        W0.counts[id] = (W0.counts[id] || 0) + 1; const ce = countEl(V, id); if (ce) ce.innerHTML = V.kind === "phone" ? `<i class="mini"></i>${W0.counts[id]} cards` : `${W0.counts[id]} cards`;
+        W0.counts[id] = (W0.counts[id] || 0) + 1; const ce = countEl(V, id); if (ce) ce.innerHTML = V.kind === "phone" ? phoneCt(W0.counts[id]) : `${W0.counts[id]} cards`;
       }
     }));
   }
