@@ -391,7 +391,7 @@ const serverNow = () => Date.now() + clockOffset;
 const reduceMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // ---------- the deck ----------
-const APP_VERSION = 1; // bump when uploading a new version; devices with an older cached copy are asked to refresh
+const APP_VERSION = 2; // bump when uploading a new version; devices with an older cached copy are asked to refresh
 // [low, high, group]: group 0 = always in, 1 = joins at 3 players, 2 = joins at 4, 3 = joins at 5
 const DECK = [[1,10,1],[1,9,2],[1,8,2],[1,7,0],[1,6,0],[1,5,0],[2,4,0],[2,10,0],[1,9,0],[1,8,0],[1,7,0],[1,6,0],[2,5,0],[2,4,0],
   [3,10,3],[2,9,0],[2,8,1],[2,7,2],[2,6,2],[2,5,0],[3,4,0],[3,9,0],[3,8,0],[3,7,0],[2,6,0],[3,5,2],[3,4,2],
@@ -486,7 +486,9 @@ function addCheck(sets, out, p, e, q) {
 const canTake = (sets, out, p, q) => q !== p && !!sets[q] && !out.includes(q);
 
 // ---------- session ----------
-let uid = null, code = null, room = null, roomRef = null, isHost = false, isTV = false, myHand = [], handRef = null;
+let uid = null, code = null, room = null, roomRef = null, isHost = false, isTV = false, myHand = [], myHandSeq = 0, handRef = null;
+// a hand is saved as { s: the move it belongs to, c: the cards }
+const handCards = v => arr(v && typeof v === "object" && !Array.isArray(v) && ("s" in v || "c" in v) ? v.c : v);
 let selColor = load("color") || COLORS[Math.floor(Math.random() * COLORS.length)];
 const qs = new URLSearchParams(location.search);
 $("nameIn").value = load("name") || "";
@@ -573,7 +575,7 @@ function enterRoom(c) {
     render(); brainTick();
   });
   handRef = R(`${c}/hands/${uid}`);
-  handRef.on("value", s => { myHand = arr(s.val()); if (room) onHand(); });
+  handRef.on("value", s => { const v = s.val(); myHand = handCards(v); myHandSeq = (v && v.s) || 0; if (room) onHand(); });
 }
 function stopPresence() {
   if (presenceCb) { db.ref(".info/connected").off("value", presenceCb); presenceCb = null; }
@@ -691,7 +693,7 @@ function brainCmds(s) {
 }
 async function readHands() {
   const o = order(), hands = {};
-  await Promise.all(o.map(async id => { hands[id] = arr((await R(`${code}/hands/${id}`).once("value")).val()); }));
+  await Promise.all(o.map(async id => { hands[id] = handCards((await R(`${code}/hands/${id}`).once("value")).val()); }));
   return hands;
 }
 async function takeMove(s, p, mv, why) {
@@ -743,7 +745,7 @@ function applyMove(s, p, mv, hands) {
   const phase = end === "game" ? "gameOver" : end === "round" ? "roundEnd" : "play";
   const ns = { phase, seq: s.seq + 1, at: TS, round: s.round, order: o, turn, turnAt: serverNow() + evDur(ev), sets, counts, disc, out, star: s.star || null };
   const upd = {};
-  o.forEach(id => { upd[`${ROOT}/${code}/hands/${id}`] = hands[id] || []; });
+  o.forEach(id => { upd[`${ROOT}/${code}/hands/${id}`] = { s: ev.seq, c: hands[id] || [] }; });
   upd[`${ROOT}/${code}/pub/state`] = ns;
   upd[`${ROOT}/${code}/pub/scores`] = sc;
   upd[`${ROOT}/${code}/pub/evs/e${ev.seq}`] = ev;
@@ -823,7 +825,7 @@ async function dealNow() {
   o.forEach((id, i) => {
     const h = deck.slice(i * per, (i + 1) * per).map(k => k * 2 + (Math.random() < 0.5 ? 1 : 0)); // dealt whichever way up they land
     if (h.some(e => e >> 1 === STAR_K)) star = id;
-    upd[`${ROOT}/${code}/hands/${id}`] = h; counts[id] = h.length;
+    upd[`${ROOT}/${code}/hands/${id}`] = { s: (s.seq || 0) + 1, c: h }; counts[id] = h.length;
   });
   const seq = (s.seq || 0) + 1;
   const ev = { k: "deal", seq, p: star, per, after: { sets: {}, counts, disc: 0, out: [], turn: star, scores: Object.assign({}, room.scores || {}), star } };
@@ -879,6 +881,8 @@ function onHand() {
   if (!V.busy && !V.q.length) { reconcileHand(); renderHand(); paintControls(); }
 }
 function reconcileHand() {
+  const V = VIEWS.phone;
+  if (V && myHandSeq > V.seq) return; // the cards changed in a move this screen hasn't animated yet
   if (sortHand(handView).join() !== sortHand(myHand).join()) handView = myHand.slice();
   sel = sel.filter(e => handView.includes(e));
 }
@@ -982,18 +986,20 @@ function handFrame() {
 function startHandLoop() { if (!HZ.raf) HZ.raf = requestAnimationFrame(handFrame); }
 function sizeHandZone() { $("handZone").style.paddingTop = "26px"; } // the magnified card may rise over the verdict line while you browse
 function haptic(strong) { if (isTV) return; try { if (typeof navigator.vibrate === "function") navigator.vibrate(strong ? 18 : 7); else $("hapLab").click(); } catch (e) {} }
-function renderHand() {
+function renderHand(opt) {
   if (!room || !room.state || room.state.phase === "lobby") return;
   const h = $("hand"), cards = sortHand(handView);
   const W = h.clientWidth || 360, cw = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--cw")) || 80;
   const key = cards.join(",") + "|" + W + "|" + cw;
   if (h.dataset.key !== key) {
+    const was = {}; if (!(opt && opt.still)) HZ.els.forEach((b, i) => { if (b.isConnected && b.style.visibility !== "hidden") was[HZ.cards[i] >> 1] = b.firstElementChild.getBoundingClientRect().left; });
     h.dataset.key = key; HZ.W = W; HZ.cw = cw; HZ.cards = cards; sizeHandZone();
     h.innerHTML = "";
     HZ.els = cards.map(e => { const b = document.createElement("div"); b.className = "hcard"; b.innerHTML = cardHTML(e); h.appendChild(b); return b; });
     if (HZ.focus != null && HZ.focus > cards.length - 1) HZ.focus = cards.length - 1;
     HZ.fi = Math.min(HZ.fi, Math.max(0, cards.length - 1));
     handFrame(); // lay the new cards out now, so animations can measure where they sit
+    if (!reduceMotion) HZ.els.forEach((b, i) => { const x0 = was[cards[i] >> 1]; if (x0 == null) return; const dx = x0 - b.firstElementChild.getBoundingClientRect().left; if (Math.abs(dx) > 1) b.firstElementChild.animate([{ transform: `translateX(${dx.toFixed(1)}px)` }, { transform: "none" }], { duration: 420, easing: "cubic-bezier(.3,0,.2,1)" }); });
   }
   sel = sel.filter(e => cards.includes(e));
   paintSel();
@@ -1237,12 +1243,13 @@ async function go(V, g, to, dur, o = {}) {
   Object.assign(g.style, { left: to.x + "px", top: to.y + "px", width: to.w + "px", transform: o.t1 || "", opacity: o.o1 ?? 1 });
   g.style.setProperty("--w", to.w + "px");
 }
-function label(g, t, i) {
-  const r = box(g), l = document.createElement("div"); l.className = "lbl2"; l.textContent = t; l.style.left = r.x + r.w / 2 + "px"; l.style.top = Math.max(4, r.y - 30 - (i % 2) * 26) + "px"; $("fx").appendChild(l);
+function label(g, t, i, below) {
+  const r = box(g), l = document.createElement("div"); l.className = "lbl2"; l.textContent = t; l.style.left = r.x + r.w / 2 + "px";
+  l.style.top = (below ? r.y + r.w * 1.5 + 8 + (i % 2) * 26 : Math.max(4, r.y - 30 - (i % 2) * 26)) + "px"; $("fx").appendChild(l);
   l.animate([{ opacity: 0, transform: "translateX(-50%) scale(.6)" }, { opacity: 1, transform: "translateX(-50%) scale(1)", offset: 0.15 }, { opacity: 1, offset: 0.8 }, { opacity: 0 }], { duration: 2000 }).finished.then(() => l.remove());
 }
-async function flipG(V, g, e2, lbl, i = 0) {
-  if (lbl) label(g, lbl, i);
+async function flipG(V, g, e2, lbl, i = 0, below) {
+  if (lbl) label(g, lbl, i, below);
   sfx("flip");
   if (!reduceMotion) await g.animate([{ transform: "rotate(0) scale(1)" }, { transform: "rotate(90deg) scale(1.15)", offset: 0.5 }, { transform: "rotate(180deg) scale(1)" }], { duration: 700 * V.sp, easing: "ease-in-out" }).finished;
   g.innerHTML = cardSVG(e2);
@@ -1304,7 +1311,7 @@ async function runEv(V, ev) {
 async function toSet(V, W, p, cards, owner) {
   const fr = cards.map(e => { const el = p === V.me ? cardEl(V, e >> 1) : null; return el ? box(el) : smallAt(seatBox(V, p)); });
   W.sets[owner] = (W.sets[owner] || []).concat(cards); W.counts[p] = Math.max(0, (W.counts[p] || 0) - cards.length);
-  if (p === V.me) { handView = handView.filter(e => !cards.includes(e)); sel = []; }
+  if (p === V.me) { const ks = new Set(cards.map(e => e >> 1)); handView = handView.filter(e => !ks.has(e >> 1)); sel = []; }
   drawV(V, W); hideK(V, cards);
   const gs = cards.map((e, i) => ghost(fr[i], cardSVG(e)));
   await Promise.all(gs.map((g, i) => wait(V, i * 120).then(() => { const t = cardEl(V, cards[i] >> 1); return go(V, g, t ? box(t) : fr[i], 750, { arc: 50, grow: 1.3, ease: "cubic-bezier(.3,1.3,.5,1)" }); })));
@@ -1330,13 +1337,14 @@ async function animBounce(V, W, b) {
   const x0 = clampX(cx - tot / 2, tot);
   await Promise.all(gs.map((g, i) => go(V, g, { x: x0 + i * sp, y, w: Wd }, 450, { ease: "cubic-bezier(.3,1.4,.5,1)" })));
   say(V, `${b.o === V.me ? "They go back to you" : "Back they go to " + esc(rawName(b.o))}, flipped`);
-  for (let i = 0; i < gs.length; i++) { flipG(V, gs[i], b.cards[i] ^ 1, `${val(b.cards[i])} → ${other(b.cards[i])}`, i); await wait(V, 180); }
+  for (let i = 0; i < gs.length; i++) { flipG(V, gs[i], b.cards[i] ^ 1, `${val(b.cards[i])} → ${other(b.cards[i])}`, i, b.o !== V.me); await wait(V, 180); }
   await wait(V, 1200);
   await homeCards(V, W, b.o, b.cards, gs);
 }
 async function homeCards(V, W, id, cs, gs) {
   if (id === V.me) {
-    handView = handView.concat(cs.map(e => e ^ 1)); renderHand(); hideK(V, cs);
+    const ks = new Set(cs.map(e => e >> 1));
+    handView = handView.filter(e => !ks.has(e >> 1)).concat(cs.map(e => e ^ 1)); renderHand(); hideK(V, cs);
     await Promise.all(gs.map((g, i) => wait(V, i * 120).then(() => { const t = cardEl(V, cs[i] >> 1); return go(V, g, t ? box(t) : smallAt(seatBox(V, id)), 650, { arc: 20 }); })));
     showK(V, cs); gs.forEach(g => g.remove()); W.counts[id] = (W.counts[id] || 0) + cs.length;
     cs.forEach(e => { const el = cardEl(V, e >> 1); if (el) el.animate([{ boxShadow: "0 0 0 3px #ffb547, 0 0 18px #ffb547" }, { boxShadow: "0 0 0 0 #ffb547" }], { duration: 1400 }); });
@@ -1361,12 +1369,12 @@ async function animTake(V, W, ev) {
   const gs = cs.map((e, i) => ghost(fr[i], cardSVG(e)));
   const c = box(centreEl(V)), gap = 16;
   const Wd = V.kind === "tv" ? Math.min(150, innerHeight * 0.15, (c.w - 40) / cs.length - gap) : Math.max(48, Math.min(92, (c.w - 40) / cs.length - gap, (c.h - 50) / 1.5));
-  const x0 = c.x + c.w / 2 - (Wd * cs.length + gap * (cs.length - 1)) / 2, y = c.y + c.h / 2 - Wd * 0.75;
+  const x0 = c.x + c.w / 2 - (Wd * cs.length + gap * (cs.length - 1)) / 2, y = c.y + c.h * (V.kind === "phone" ? 0.4 : 0.5) - Wd * 0.75;
   sfx("sweep");
   await Promise.all(gs.map((g, i) => go(V, g, { x: x0 + i * (Wd + gap), y, w: Wd }, 650, { ease: "cubic-bezier(.3,1.2,.5,1)" })));
   say(V, `Every card turns over on its way to ${p === V.me ? "you" : esc(rawName(p))}`);
   await wait(V, 300);
-  for (let i = 0; i < gs.length; i++) { await flipG(V, gs[i], cs[i] ^ 1, `${val(cs[i])} → ${other(cs[i])}`); await wait(V, 300); }
+  for (let i = 0; i < gs.length; i++) { await flipG(V, gs[i], cs[i] ^ 1, `${val(cs[i])} → ${other(cs[i])}`, 0, V.kind === "phone"); await wait(V, 300); }
   await wait(V, 700);
   await homeCards(V, W, p, cs, gs);
 }
@@ -1383,7 +1391,7 @@ async function animFlip(V, W, ev) {
 async function handFlip(V) {
   const cards = HZ.cards.slice(), fr = HZ.els.map(el => box(el.firstElementChild));
   const gs = cards.map((e, i) => { const g = ghost(fr[i], cardSVG(e)); g.style.zIndex = 10 + i; g.style.transformOrigin = "50% 50%"; return g; });
-  handView = handView.map(e => e ^ 1); sel = []; renderHand(); HZ.els.forEach(el => { el.style.visibility = "hidden"; });
+  handView = handView.map(e => e ^ 1); sel = []; renderHand({ still: true }); HZ.els.forEach(el => { el.style.visibility = "hidden"; });
   const nc = cards.map(e => e ^ 1), to = nc.map(e => { const t = cardEl(V, e >> 1); return t ? box(t) : fr[0]; });
   const rank = to.map(t => to.filter(u => u.x < t.x).length);
   sfx("flip");
@@ -1443,7 +1451,7 @@ async function animDeal(V, ev) {
   const deck = ghost(dk, "", true);
   let mine = [];
   if (V.kind === "phone" && V.me && (W.counts[V.me] || 0) > 0) {
-    for (let t = 0; t < 30 && myHand.length !== W.counts[V.me]; t++) await wait(V, 50);
+    for (let t = 0; t < 40 && myHandSeq < ev.seq; t++) await wait(V, 50);
     mine = sortHand(myHand); handView = mine.slice(); renderHand(); hideK(V, mine);
   }
   sfx("deal");
