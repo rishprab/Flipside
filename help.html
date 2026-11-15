@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How to play Flipside</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --bg0: #160d1f; --bg1: #22162e; --bg2: #3b2850; --felt: #2e1f3d; --ink: #f6efe6; --muted: #b9a9c9; --line: #4a3760; --acc: #ffb547; --acc2: #e8952a; --good: #5fd38d; --bad: #ff6b6b; --turn: #7fd3ff; }
+  * { box-sizing: border-box; min-width: 0; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: radial-gradient(ellipse at 50% 0%, var(--bg2) 0%, var(--bg1) 45%, var(--bg0) 100%) fixed; color: var(--ink); font: 17px/1.55 Outfit, system-ui, sans-serif; overflow-x: clip; }
+  a { color: var(--acc); font-weight: 700; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 18px; }
+  header { padding: 34px 0 10px; text-align: center; }
+  .logo { font-family: Fredoka, sans-serif; font-weight: 700; letter-spacing: 4px; color: var(--acc); font-size: clamp(2.4rem, 8vw, 3.4rem); margin: 0; line-height: 1; }
+  .logo .fl { display: inline-block; transform: rotate(180deg); }
+  .lede { color: var(--muted); font-weight: 600; margin: 8px auto 0; max-width: 34em; }
+  nav { position: sticky; top: 0; z-index: 20; background: rgba(22,13,31,0.88); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  nav .wrap { display: flex; gap: 6px; overflow-x: auto; padding: 8px 18px; scrollbar-width: none; }
+  nav a { flex: 0 0 auto; text-decoration: none; color: var(--ink); background: rgba(255,255,255,0.06); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font-size: 0.85rem; }
+  nav a.play { background: var(--acc); color: #2a1a08; border-color: var(--acc); }
+  section { padding: 34px 0 10px; }
+  h2 { font: 600 clamp(1.6rem, 5vw, 2.1rem)/1.1 Fredoka, sans-serif; color: var(--acc); margin: 0 0 8px; }
+  h3 { font: 600 1.3rem/1.15 Fredoka, sans-serif; margin: 0 0 4px; }
+  p { margin: 0 0 12px; }
+  .muted { color: var(--muted); }
+  .panel { background: rgba(255,255,255,0.05); border: 1px solid var(--line); border-radius: 20px; padding: 18px; margin: 14px 0; }
+  .num { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; background: var(--acc); color: #2a1a08; font: 700 16px Fredoka, sans-serif; margin-right: 8px; vertical-align: -6px; }
+  .btn { display: inline-block; border: 0; border-radius: 14px; padding: 12px 18px; min-height: 46px; font: 800 1rem Outfit, sans-serif; background: linear-gradient(135deg, var(--acc), var(--acc2)); color: #2a1a08; cursor: pointer; }
+  .btn.ghost { background: transparent; border: 2px solid var(--line); color: var(--ink); }
+  .btn:disabled { background: #43334f; color: #9a8aab; cursor: default; }
+  .btn:focus-visible, nav a:focus-visible, .chip:focus-visible { outline: 3px solid var(--turn); outline-offset: 2px; }
+
+  /* cards */
+  .fc { position: relative; width: var(--w, 60px); aspect-ratio: 2 / 3; border-radius: 9% / 6%; overflow: hidden; background: #111; box-shadow: 0 5px 12px rgba(0,0,0,0.45), inset 0 0 0 1.5px rgba(255,255,255,0.25); flex: 0 0 auto; }
+  .fc svg { display: block; width: 100%; height: 100%; }
+  .fc.back { background: repeating-linear-gradient(45deg, #5b3f7a 0 5px, #4a3166 5px 10px); box-shadow: inset 0 0 0 2px rgba(246,239,230,0.65), 0 3px 8px rgba(0,0,0,0.45); }
+  .fc.back::after { content: "F"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 700 calc(var(--w, 60px) * 0.42) Fredoka, sans-serif; color: rgba(255,181,71,0.85); }
+
+  /* hero card + anatomy */
+  .hero { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 24px; align-items: center; }
+  .bigcard { cursor: pointer; justify-self: center; text-align: center; }
+  .bigcard .fc { --w: min(220px, 52vw); }
+  .bigcard small { display: block; margin-top: 10px; color: var(--muted); font-weight: 700; }
+  .notes { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+  .notes li { display: grid; grid-template-columns: 34px 1fr; gap: 8px; }
+  .notes b { display: block; }
+  .notes span { color: var(--muted); font-size: 0.95rem; }
+  .notes i { font: 700 15px/30px Fredoka, sans-serif; font-style: normal; width: 30px; height: 30px; border-radius: 50%; background: var(--acc); color: #2a1a08; text-align: center; }
+  .goal { display: flex; gap: 10px; justify-content: center; margin: 14px 0 4px; }
+  .goal span { width: 54px; height: 54px; border-radius: 50%; background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.3); font: 700 30px/54px Fredoka, sans-serif; text-align: center; transition: background 0.3s, color 0.3s, transform 0.3s; }
+  .goal span.on { background: var(--acc); color: #2a1a08; transform: scale(1.08); }
+
+  /* little interactive tables */
+  .demo { margin: 14px 0 6px; }
+  .stagewrap { position: relative; margin: 0 auto; overflow: visible; }
+  .stage { position: absolute; left: 0; top: 0; width: 340px; transform-origin: 0 0; border-radius: 26px; background: radial-gradient(ellipse at 50% 45%, #3f2b56 0%, #2e1f40 60%, #24182f 100%); border: 2px solid rgba(255,181,71,0.22); box-shadow: inset 0 0 40px rgba(0,0,0,0.45); overflow: hidden; }
+  .stage .fc { position: absolute; margin: 0; }
+  .stage .who { position: absolute; transform: translateX(-50%); font-weight: 800; font-size: 0.85rem; white-space: nowrap; background: rgba(22,13,31,0.6); border-radius: 999px; padding: 2px 10px; }
+  .stage .who em { font-style: normal; color: var(--muted); font-weight: 700; }
+  .stage .spot { position: absolute; transform: translateX(-50%); font-size: 0.75rem; font-weight: 700; color: var(--muted); white-space: nowrap; }
+  .stage .lbl { position: absolute; transform: translateX(-50%); background: #fff; color: #111; font: 700 14px Fredoka, sans-serif; padding: 1px 9px; border-radius: 999px; white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,0.4); z-index: 30; }
+  .stage .ban { position: absolute; left: 50%; transform: translate(-50%, -50%); font: 700 28px Fredoka, sans-serif; color: var(--acc); text-shadow: 0 3px 0 #2a1a08; white-space: nowrap; z-index: 30; }
+  .stage .float { position: absolute; transform: translateX(-50%); font: 700 16px Fredoka, sans-serif; color: var(--acc); z-index: 30; }
+  .stage .toks { position: absolute; display: flex; gap: 6px; transform: translateX(-50%); }
+  .stage .tok { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.3); font: 700 17px/30px Fredoka, sans-serif; text-align: center; }
+  .stage .tok.got { background: var(--acc); color: #2a1a08; }
+  .ctrl { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
+  .say { text-align: center; font-weight: 700; min-height: 3em; margin-top: 10px; color: var(--ink); }
+  .say.good { color: var(--good); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 12px; }
+  .chip { font: 700 0.95rem Outfit, sans-serif; border: 2px solid var(--line); background: rgba(255,255,255,0.05); color: var(--ink); border-radius: 999px; padding: 8px 14px; min-height: 44px; cursor: pointer; }
+  .chip.on { background: var(--acc); border-color: var(--acc); color: #2a1a08; }
+  .verdict { text-align: center; font-weight: 800; min-height: 3em; margin-top: 12px; }
+  .verdict.good { color: var(--good); } .verdict.bad { color: var(--bad); } .verdict.ok { color: var(--turn); }
+
+  /* deck */
+  .deck { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 10px; margin-top: 12px; }
+  .deck .fc { --w: 100%; cursor: pointer; transition: opacity 0.3s, filter 0.3s; }
+  .deck .fc.out { opacity: 0.15; filter: grayscale(1); }
+  .pips { display: flex; flex-wrap: wrap; gap: 14px; margin: 10px 0; font-weight: 700; }
+  .pips span { display: inline-flex; align-items: center; gap: 8px; }
+  .pip { width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 1px solid #24172e; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #24172e; font-size: 13px; }
+  .pip i { width: 4px; height: 4px; border-radius: 50%; background: #24172e; }
+
+  /* screenshots */
+  .shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 12px; }
+  .shot { margin: 0; background: rgba(255,255,255,0.05); border: 1px solid var(--line); border-radius: 18px; padding: 10px; }
+  .shot img { display: block; width: 100%; border-radius: 12px; cursor: zoom-in; }
+  .shot figcaption { margin-top: 8px; font-size: 0.92rem; color: var(--muted); }
+  .shot figcaption b { color: var(--ink); display: block; }
+  .shot.wide { grid-column: 1 / -1; }
+  #lightbox { position: fixed; inset: 0; z-index: 50; background: rgba(10,5,15,0.92); display: none; align-items: center; justify-content: center; padding: 16px; cursor: zoom-out; }
+  #lightbox.on { display: flex; }
+  #lightbox img { max-width: 100%; max-height: 100%; border-radius: 14px; }
+
+  .tips { display: grid; gap: 10px; padding: 0; list-style: none; margin: 0; }
+  .tips li { background: rgba(255,255,255,0.05); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+  .tips b { color: var(--acc); }
+  footer { text-align: center; padding: 30px 0 50px; color: var(--muted); }
+  @media (max-width: 600px) { .hero { grid-template-columns: minmax(0, 1fr); } }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+<header class="wrap">
+  <h1 class="logo">FLIP<span class="fl">S</span>IDE</h1>
+  <p class="lede">A card game of sets, swaps and flips for 3 to 5 players. Here's everything you need, with little tables you can play with along the way.</p>
+</header>
+<nav aria-label="Sections"><div class="wrap">
+  <a href="#cards">The cards</a><a href="#goal">The goal</a><a href="#turn">Your turn</a><a href="#clash">Clashes</a><a href="#out">Going out</a><a href="#deck">The deck</a><a href="#screens">On screen</a><a href="#tips">Tips</a><a class="play" href="./">Play</a>
+</div></nav>
+
+<main class="wrap">
+<section id="cards">
+  <h2>Every card has two numbers</h2>
+  <div class="hero">
+    <div class="bigcard" id="bigcard" role="button" tabindex="0" aria-label="A card. Tap to turn it over."><div id="bigslot"></div><small>Tap the card to turn it over</small></div>
+    <ul class="notes">
+      <li><i>1</i><div><b>The number that counts</b><span>The big one, top left. That's what the card is worth right now.</span></div></li>
+      <li><i>2</i><div><b>Its flip side</b><span>The small number in the white box. Turn the card over and that's what it becomes.</span></div></li>
+      <li><i>3</i><div><b>Day and night</b><span>The half that counts is lit up. The other half is night, or a reflection in a lake.</span></div></li>
+      <li><i>4</i><div><b>You can't turn single cards</b><span>Cards only turn over when a set goes back to a hand, when someone takes a set, or when you flip your whole hand.</span></div></li>
+    </ul>
+  </div>
+</section>
+
+<section id="goal">
+  <h2>The goal: spell F‑L‑I‑P</h2>
+  <p>Each round is a race to get rid of all your cards. The first player out takes <b>2 letters</b>, the second takes <b>1</b>, and that ends the round. Whoever spells the whole word first wins.</p>
+  <div class="goal" id="goal" aria-label="The four letters you're racing to collect"><span>F</span><span>L</span><span>I</span><span>P</span></div>
+</section>
+
+<section id="turn">
+  <h2>Your turn</h2>
+  <p>If your set from last turn is still on the table, it's cleared away first (more on that below). Then you do <b>one</b> of these four things.</p>
+
+  <div class="panel">
+    <h3><span class="num">1</span>Play a set</h3>
+    <p class="muted">One or more cards of the same number. If someone already has a set <b>the same size</b> out, yours must be higher, and theirs goes back to their hand, turned over.</p>
+    <div class="demo" id="dPlay"></div>
+  </div>
+
+  <div class="panel">
+    <h3><span class="num">2</span>Add a card to someone's set</h3>
+    <p class="muted">It must be the same number. The set gets one bigger, so it may now clash with another set of that size: it has to beat it, and the beaten set goes back.</p>
+    <div class="demo" id="dAdd"></div>
+  </div>
+
+  <div class="panel">
+    <h3><span class="num">3</span>Take someone's set</h3>
+    <p class="muted">The whole set comes into your hand, and every card turns over on the way. Handy when the other side makes a great new group.</p>
+    <div class="demo" id="dTake"></div>
+  </div>
+
+  <div class="panel">
+    <h3><span class="num">4</span>Flip your hand</h3>
+    <p class="muted">Every card in your hand turns over at once. It uses up your turn, so in the game you tap the button twice to be sure.</p>
+    <div class="demo" id="dFlip"></div>
+  </div>
+</section>
+
+<section id="clash">
+  <h2>Which sets clash?</h2>
+  <p>Sets only fight sets of <b>the same size</b>. A single only cares about singles, a pair only about pairs, and so on. There's never more than one set of each size on the table. Pick a set to play against this table:</p>
+  <div class="panel">
+    <div class="demo" id="dClash"></div>
+  </div>
+  <div class="panel">
+    <h3>Your set is cleared at the start of your next turn</h3>
+    <p class="muted">If nobody beats or takes your set while it goes round the table, it's discarded as your next turn begins. Those cards are gone for good, which is how you shed cards.</p>
+    <div class="demo" id="dDisc"></div>
+  </div>
+</section>
+
+<section id="out">
+  <h2>Going out</h2>
+  <p>Play or add your last card and you're out. The first player out takes 2 letters; their last set stays on the table until their turn would come round, and if someone beats it in the meantime it's simply discarded. The second player out takes 1 letter and the round ends. Everyone's cards are gathered, shuffled and dealt again.</p>
+  <div class="panel"><div class="demo" id="dOut"></div></div>
+</section>
+
+<section id="deck">
+  <h2>The deck</h2>
+  <p>There are 40 cards. Fewer players use fewer cards, so everyone always gets the same size hand. The game sorts this out for you; the pips on the edge of a card show when it joins in.</p>
+  <div class="pips">
+    <span><span class="pip" aria-hidden="true"></span>No mark: always in</span>
+    <span><span class="pip" aria-hidden="true"><i></i></span>Joins at 3 players</span>
+    <span><span class="pip" aria-hidden="true"><i></i><i></i></span>Joins at 4</span>
+    <span><span class="pip" aria-hidden="true"><i></i><i></i><i></i></span>Joins at 5</span>
+    <span><span class="pip" aria-hidden="true">★</span>The 1/5 card: whoever holds it starts each round</span>
+  </div>
+  <div class="chips" id="pc" role="group" aria-label="Number of players"></div>
+  <div class="verdict ok" id="deckInfo"></div>
+  <div class="deck" id="deckGrid"></div>
+</section>
+
+<section id="screens">
+  <h2>On screen</h2>
+  <p>Tap any picture to see it bigger.</p>
+  <div class="shots">
+    <figure class="shot"><img src="help/phone-table.jpg" alt="Phone screen: the other players sit round a table with their sets in front of them; your hand is along the bottom with two cards picked"><figcaption><b>The table</b>Other players sit round the far side with their sets in front of them and a fan showing how many cards they hold. The line above your hand says whether your pick goes down safely.</figcaption></figure>
+    <figure class="shot"><img src="help/phone-sheet.jpg" alt="Phone screen: a panel offering to take another player's single 4"><figcaption><b>Tap a glowing set</b>On your turn, sets you can use glow. Tap one to add a card to it or take it; the panel tells you exactly what will happen.</figcaption></figure>
+    <figure class="shot"><img src="help/phone-take.jpg" alt="Phone screen: a taken card turning over in the middle of the table with a 4 to 5 tag"><figcaption><b>Every flip is shown</b>Taken or returned cards turn over in the middle of the table, with a tag showing the old and new number.</figcaption></figure>
+    <figure class="shot"><img src="help/phone-out.jpg" alt="Phone screen: You're out first! with the letters F and L flying to the score"><figcaption><b>Going out</b>The letters you win fly up to the Score button.</figcaption></figure>
+    <figure class="shot"><img src="help/phone-score.jpg" alt="Phone screen: the score panel with each player's F L I P letters"><figcaption><b>Score</b>Tap Score any time to see everyone's letters. You can also leave a game from here.</figcaption></figure>
+    <figure class="shot wide"><img src="help/tv-table.jpg" alt="TV screen: five players seated round an oval table with their sets and letters"><figcaption><b>On a TV</b>Choose "Use this screen as the table" on a TV or laptop and everyone joins with their phones by scanning the code. The TV shows the whole table and everyone's letters; your phone shows your hand.</figcaption></figure>
+  </div>
+</section>
+
+<section id="tips">
+  <h2>Tips for the phone</h2>
+  <ul class="tips">
+    <li><b>Slide along your hand</b> to magnify cards. Lift your finger to pick the card under it; lift on more cards of the same number to build a set.</li>
+    <li><b>Tap the bar under a group</b> ("all 3") to pick all your matching cards at once. Matching numbers always sit together.</li>
+    <li><b>Read the line above your hand</b>: green means your set goes down, red tells you what it needs.</li>
+    <li><b>Tap the table</b> to hurry the animations along.</li>
+    <li><b>Running low on good numbers?</b> Look at the white boxes. If lots of them match, flipping your hand could set up a big set.</li>
+    <li><b>Computer players</b> can fill empty seats: Relaxed ones play loosely, Sharp ones play to win and will happily take your sets.</li>
+  </ul>
+</section>
+</main>
+<footer>Ready? <a href="./">Start a game</a></footer>
+<div id="lightbox" role="dialog" aria-label="Bigger picture"><img alt=""></div>
+
+<script>
+{
+const DECK = [[1,10,1],[1,9,2],[1,8,2],[1,7,0],[1,6,0],[1,5,0],[2,4,0],[2,10,0],[1,9,0],[1,8,0],[1,7,0],[1,6,0],[2,5,0],[2,4,0],
+  [3,10,3],[2,9,0],[2,8,1],[2,7,2],[2,6,2],[2,5,0],[3,4,0],[3,9,0],[3,8,0],[3,7,0],[2,6,0],[3,5,2],[3,4,2],
+  [4,9,3],[4,8,0],[4,7,0],[3,6,1],[3,5,0],[5,8,0],[5,7,0],[3,6,0],[4,5,1],[5,8,3],[6,7,0],[4,6,0],[6,7,3]].map(([a, b, g], k) => ({ k, a, b, g }));
+const STAR_K = DECK.find(c => c.a === 1 && c.b === 5).k;
+const HUE = [, "#ef4b3f", "#f5872a", "#f6c42b", "#9ccc3c", "#35b86b", "#1fb7b0", "#3c8fe0", "#6f63d9", "#b558c9", "#f2679a"];
+// a card in play is a number: card index * 2, plus 1 if it's turned so its high number counts
+const val = e => (e & 1 ? DECK[e >> 1].b : DECK[e >> 1].a);
+const other = e => (e & 1 ? DECK[e >> 1].a : DECK[e >> 1].b);
+const deckFor = n => DECK.filter(c => c.g <= n - 2).map(c => c.k);
+const sortHand = h => h.slice().sort((x, y) => val(x) - val(y) || other(x) - other(y) || x - y);
+const MIN_P = 3, MAX_P = 5, WIN = 4, AUTO_MS = 20000, NEXT_MS = 15000;
+const COLORS = ["#FFB3A8", "#F0A24A", "#F2D16B", "#9FD08C", "#7FE0D8", "#8EC4F7", "#C3A6F5", "#F5A6D0"];
+const NUMW = ["", "single", "pair", "three", "four", "five", "six", "seven", "eight"];
+const setName = cs => cs.length === 1 ? `single ${val(cs[0])}` : cs.length === 2 ? `pair of ${val(cs[0])}s` : `${NUMW[cs.length] || cs.length} ${val(cs[0])}s`;
+
+// card art: Sun & Moon and Still Lake scenes, alternating through the deck
+const rgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16, n >> 8 & 255, n & 255]; };
+const mix = (h, b, p) => { const x = rgb(h), y = rgb(b); return `rgb(${x.map((v, i) => Math.round(v * p + y[i] * (1 - p))).join()})`; };
+const lighten = (h, p) => mix("#ffffff", h, p), darken = (h, p) => mix("#000000", h, p);
+function half(v, on, st, vr) {
+  const c = HUE[v]; let s = "";
+  if (st === "sun") {
+    if (on) {
+      s += `<rect width="100" height="75" fill="${lighten(c, 0.45)}"/><rect width="100" height="42" fill="${lighten(c, 0.78)}" opacity="0.8"/>`;
+      for (let i = 0; i < v; i++) { const a = Math.PI * (1 + (i + 0.5) / v); s += `<line x1="${58 + 17 * Math.cos(a)}" y1="${66 + 17 * Math.sin(a)}" x2="${58 + 28 * Math.cos(a)}" y2="${66 + 28 * Math.sin(a)}" stroke="${c}" stroke-width="3.6" stroke-linecap="round"/>`; }
+      s += `<circle cx="58" cy="66" r="13" fill="${c}"/><circle cx="54" cy="62" r="4.5" fill="#fff" opacity=".4"/>`;
+      if (vr === 0) s += `<path d="M0 75 Q25 58 50 70 T100 64 V75Z" fill="${darken(c, 0.25)}"/>`;
+      if (vr === 1) s += `<path d="M0 70 Q12 66 25 70 T50 70 T75 70 T100 70 V75H0Z" fill="${mix(c, "#2a7bbf", 0.35)}"/>`;
+      if (vr === 2) s += `<path d="M62 22 q4-4 8 0 q4-4 8 0 M72 32 q3-3 6 0 q3-3 6 0" stroke="${darken(c, 0.45)}" stroke-width="1.6" fill="none"/><path d="M0 75 L20 66 L40 72 L60 63 L80 70 L100 65 V75Z" fill="${darken(c, 0.3)}"/>`;
+    } else {
+      s += `<rect width="100" height="75" fill="#161937"/><rect y="38" width="100" height="37" fill="${mix(c, "#161937", 0.35)}" opacity="0.85"/>`;
+      for (let i = 0; i < v; i++) s += `<circle cx="${30 + ((i * 37) % 62)}" cy="${12 + ((i * 23) % 40)}" r="1.4" fill="#fff" opacity=".85"/>`;
+      s += `<circle cx="58" cy="62" r="10" fill="${lighten(c, 0.7)}"/><circle cx="63" cy="58" r="9" fill="${mix(c, "#161937", 0.3)}"/><path d="M0 75 Q25 66 50 72 T100 68 V75Z" fill="#0c0d20"/>`;
+    }
+  } else {
+    const n = Math.min(v, 5) + 1; let pts = "0,75 "; for (let i = 0; i <= n; i++) pts += `${i * 100 / n},${i % 2 ? 34 + ((v * 7 + i * 11) % 18) : 60} `; pts += "100,75";
+    if (on) {
+      s += `<rect width="100" height="75" fill="${lighten(c, 0.82)}"/><circle cx="80" cy="22" r="6" fill="#fff" opacity=".9"/><polygon points="${pts}" fill="${c}"/><polygon points="${pts}" fill="#000" opacity=".16" transform="translate(9,6)"/>`;
+      if (vr === 1) for (let i = 0; i < 4; i++) s += `<path d="M${50 + i * 12} 75 l5 -15 l5 15z" fill="${darken(c, 0.45)}"/>`;
+      if (vr === 2) s += `<rect x="34" y="56" width="5" height="19" fill="#fff"/><rect x="34" y="62" width="5" height="3" fill="${darken(c, 0.3)}"/><path d="M33 56h7l-3.5-5z" fill="${darken(c, 0.3)}"/>`;
+      s += `<rect y="73" width="100" height="2" fill="${darken(c, 0.3)}" opacity=".5"/>`;
+    } else {
+      s += `<rect width="100" height="75" fill="${mix(c, "#0f3346", 0.32)}"/><polygon points="${pts}" fill="${lighten(c, 0.25)}" opacity=".4"/>`;
+      for (let i = 0; i < 5; i++) s += `<line x1="${8 + i * 14}" x2="${36 + i * 14}" y1="${48 + i * 5}" y2="${48 + i * 5}" stroke="#fff" opacity=".2" stroke-width="1.4"/>`;
+    }
+  }
+  return s;
+}
+function corner(a, b, on) {
+  const ink = on ? "#24172e" : "#fff";
+  return `<text x="8" y="31" font-family="Fredoka,sans-serif" font-weight="700" font-size="${a > 9 ? 25 : 30}" fill="${ink}" stroke="${on ? "#fff" : "#0008"}" stroke-width="3" paint-order="stroke">${a}</text>
+   <g opacity="${on ? 1 : 0.75}"><rect x="7" y="36" width="${b > 9 ? 27 : 21}" height="14" rx="3.5" fill="#fff" stroke="#24172e" stroke-width=".8"/>
+   <path d="M10.4 43 a2.6 2.6 0 1 1 2.6 2.6" fill="none" stroke="#111" stroke-width="1.2"/><path d="M11.6 45.7 l2 -1.5 l.25 2.4z" fill="#111"/>
+   <text x="17" y="47.3" font-family="Fredoka,sans-serif" font-weight="700" font-size="12" fill="#111">${b}</text></g>`;
+}
+function mark(c) {
+  const star = c.k === STAR_K;
+  const one = x => { let s = `<circle cx="${x}" cy="75" r="${star ? 6.5 : 5.5}" fill="#fff" stroke="#24172e" stroke-width="1"/>`;
+    if (star) s += `<path d="M${x} 70.6 l1.3 2.8 3 .3 -2.3 2 .7 3 -2.7 -1.6 -2.7 1.6 .7 -3 -2.3 -2 3 -.3z" fill="${HUE[3]}" stroke="#24172e" stroke-width=".5"/>`;
+    else for (let i = 0; i < c.g; i++) s += `<circle cx="${x}" cy="${75 + (i - (c.g - 1) / 2) * 3.2}" r="1.25" fill="#24172e"/>`; return s; };
+  return (c.g || star) ? one(6) + one(94) : "";
+}
+const SVGC = {};
+function cardSVG(e) {
+  if (SVGC[e]) return SVGC[e];
+  const c = DECK[e >> 1], a = val(e), b = other(e), st = c.k % 2 ? "lake" : "sun", vr = Math.floor(c.k / 2) % 3;
+  return (SVGC[e] = `<svg viewBox="0 0 100 150" aria-hidden="true">${half(a, 1, st, vr)}<g transform="rotate(180 50 75)">${half(b, 0, st, vr)}${corner(b, a, 0)}</g>${corner(a, b, 1)}${mark(c)}</svg>`);
+}
+const cardHTML = (e, cls = "") => `<div class="fc ${cls}" data-k="${e >> 1}" role="img" aria-label="${val(e)} (turns into ${other(e)})">${cardSVG(e)}</div>`;
+
+const $ = id => document.getElementById(id);
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+// a card by its numbers: c(7, 1) is the 1/7 card turned so 7 counts; n picks between copies
+const c = (a, b, n = 0) => { const lo = Math.min(a, b), hi = Math.max(a, b); const ks = DECK.filter(d => d.a === lo && d.b === hi); return ks[Math.min(n, ks.length - 1)].k * 2 + (a > b ? 1 : 0); };
+const sleep = ms => new Promise(r => setTimeout(r, reduce ? 0 : ms));
+
+// ---------- hero card ----------
+let hero = c(9, 4);
+$("bigslot").innerHTML = cardHTML(hero);
+async function turnBig() {
+  const el = $("bigslot").firstElementChild;
+  if (!reduce) await el.animate([{ transform: "rotate(0)" }, { transform: "rotate(180deg)" }], { duration: 550, easing: "ease-in-out" }).finished;
+  hero ^= 1; $("bigslot").innerHTML = cardHTML(hero);
+  $("bigslot").firstElementChild.animate([{ filter: "brightness(1.6)" }, { filter: "brightness(1)" }], { duration: 400 });
+}
+$("bigcard").onclick = turnBig;
+$("bigcard").onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); turnBig(); } };
+
+// ---------- the goal letters light up as you scroll to them ----------
+new IntersectionObserver((es, ob) => es.forEach(e => { if (e.isIntersecting) { [...$("goal").children].forEach((s, i) => setTimeout(() => s.classList.add("on"), 300 + i * 350)); ob.disconnect(); } }), { threshold: 0.6 }).observe($("goal"));
+
+// ---------- a tiny table engine for the demos ----------
+function Stage(host, H) {
+  host.innerHTML = `<div class="stagewrap"><div class="stage" style="height:${H}px"></div></div><div class="say" aria-live="polite"></div><div class="ctrl"></div>`;
+  const wrap = host.querySelector(".stagewrap"), st = host.querySelector(".stage");
+  const fit = () => { const k = Math.min(1, host.clientWidth / 340); st.style.transform = `scale(${k})`; wrap.style.width = 340 * k + "px"; wrap.style.height = H * k + "px"; };
+  new ResizeObserver(fit).observe(host); fit();
+  const S = {
+    st, say: host.querySelector(".say"), ctrl: host.querySelector(".ctrl"), gen: 0,
+    clear() { st.innerHTML = ""; S.say.textContent = ""; S.say.className = "say"; },
+    card(e, x, y, w, back) { const d = document.createElement("div"); d.className = "fc" + (back ? " back" : ""); if (!back) d.innerHTML = cardSVG(e); Object.assign(d.style, { left: x + "px", top: y + "px", width: w + "px" }); d.style.setProperty("--w", w + "px"); d.e = e; st.appendChild(d); return d; },
+    text(cls, html, x, y) { const d = document.createElement("div"); d.className = cls; d.innerHTML = html; Object.assign(d.style, { left: x + "px", top: y + "px" }); st.appendChild(d); return d; },
+    async go(el, x, y, w, dur = 600, o = {}) {
+      const f = { x: parseFloat(el.style.left), y: parseFloat(el.style.top), w: parseFloat(el.style.width) };
+      const kf = [{ left: f.x + "px", top: f.y + "px", width: f.w + "px", transform: o.t0 || "none", opacity: 1 }, { left: x + "px", top: y + "px", width: w + "px", transform: o.t1 || "none", opacity: o.o1 ?? 1 }];
+      if (o.arc) kf.splice(1, 0, { left: (f.x + x) / 2 + "px", top: Math.min(f.y, y) - o.arc + "px", width: (f.w + w) / 2 * (o.grow || 1) + "px", transform: o.t1 || "none", opacity: 1 });
+      if (!reduce) await el.animate(kf, { duration: dur, easing: o.ease || "cubic-bezier(.45,0,.25,1)" }).finished;
+      Object.assign(el.style, { left: x + "px", top: y + "px", width: w + "px", transform: o.t1 || "", opacity: o.o1 ?? 1 }); el.style.setProperty("--w", w + "px");
+    },
+    async flip(el, lbl, i = 0) {
+      if (lbl) { const r = { x: parseFloat(el.style.left) + parseFloat(el.style.width) / 2, y: parseFloat(el.style.top) }; const l = S.text("lbl", lbl, r.x, Math.max(2, r.y - 26 - (i % 2) * 24)); l.animate([{ opacity: 0, transform: "translateX(-50%) scale(.6)" }, { opacity: 1, transform: "translateX(-50%) scale(1)", offset: 0.15 }, { opacity: 1, offset: 0.85 }, { opacity: 0 }], { duration: 2200 }).finished.then(() => l.remove()); }
+      if (!reduce) await el.animate([{ transform: "rotate(0) scale(1)" }, { transform: "rotate(90deg) scale(1.15)", offset: 0.5 }, { transform: "rotate(180deg) scale(1)" }], { duration: 700, easing: "ease-in-out" }).finished;
+      el.e ^= 1; el.innerHTML = cardSVG(el.e); el.animate([{ filter: "brightness(1.9)" }, { filter: "brightness(1)" }], { duration: 450 });
+    },
+    shake(els) { els.forEach(el => { el.animate([{ transform: "none" }, { transform: "translateX(-4px) rotate(-4deg)" }, { transform: "translateX(4px) rotate(4deg)" }, { transform: "translateX(-3px)" }, { transform: "none" }], { duration: 450 }); el.animate([{ filter: "drop-shadow(0 0 0 #ff6b6b)" }, { filter: "drop-shadow(0 0 9px #ff6b6b)" }, { filter: "drop-shadow(0 0 0 #ff6b6b)" }], { duration: 900 }); }); },
+    pulse(el, t) { el.animate([{ transform: "translateX(-50%) scale(1)" }, { transform: "translateX(-50%) scale(1.25)" }, { transform: "translateX(-50%) scale(1)" }], { duration: 500 }); if (t) { const f = S.text("float", t, parseFloat(el.style.left), parseFloat(el.style.top) - 4); f.animate([{ opacity: 1, transform: "translate(-50%,0)" }, { opacity: 0, transform: "translate(-50%,-24px)" }], { duration: 1100 }).finished.then(() => f.remove()); } },
+    tell(t, cls) { S.say.textContent = t; S.say.className = "say " + (cls || ""); S.say.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 250 }); },
+    button(label, run, setup) {
+      S.ctrl.innerHTML = ""; const b = document.createElement("button"); b.className = "btn"; b.textContent = label; S.ctrl.appendChild(b);
+      const r = document.createElement("button"); r.className = "btn ghost"; r.textContent = "Reset"; r.hidden = true; S.ctrl.appendChild(r);
+      r.onclick = () => { S.gen++; setup(); b.disabled = false; r.hidden = true; };
+      b.onclick = async () => { b.disabled = true; const g = ++S.gen; try { await run(); } catch (e) {} if (g === S.gen) r.hidden = false; };
+      setup();
+    }
+  };
+  return S;
+}
+// lay a hand of cards along the bottom of a stage
+const handXs = (n, w, y, W = 340) => { const step = Math.min(w * 0.72, (W - 40 - w) / Math.max(1, n - 1)); const x0 = (W - (w + step * (n - 1))) / 2; return Array.from({ length: n }, (_, i) => [x0 + i * step, y]); };
+
+// ---------- 1. play a set ----------
+{
+  const S = Stage($("dPlay"), 320); let mira, six, hand, spot;
+  S.button("Play your two 7s", async () => {
+    const sevens = hand.filter(el => val(el.e) === 7);
+    S.tell("You play two 7s…"); spot.remove();
+    await Promise.all(sevens.map((el, i) => sleep(i * 120).then(() => S.go(el, 128 + i * 30, 128, 56, 700, { arc: 40, ease: "cubic-bezier(.3,1.3,.5,1)" }))));
+    await sleep(300); S.tell("…which beats Mira's two 6s (same size, higher number)"); S.shake(six); await sleep(1000);
+    await Promise.all(six.map((el, i) => S.go(el, 110 + i * 64, 44, 60, 450, { ease: "cubic-bezier(.3,1.4,.5,1)" })));
+    S.tell("So they go back to Mira, turned over");
+    for (let i = 0; i < six.length; i++) { S.flip(six[i], `${val(six[i].e)} → ${other(six[i].e)}`, i); await sleep(200); }
+    await sleep(1600);
+    await Promise.all(six.map(el => S.go(el, 160, 10, 20, 450, { o1: 0 })));
+    mira.innerHTML = "Mira <em>· 8 cards</em>"; S.pulse(mira, "+2");
+    S.tell("Mira's hand grew by two, and your 7s now hold the table", "good");
+  }, () => {
+    S.clear();
+    mira = S.text("who", "Mira <em>· 6 cards</em>", 170, 8);
+    six = [S.card(c(6, 2), 138, 38, 50), S.card(c(6, 3), 162, 38, 50)];
+    spot = S.text("spot", "Your set goes here", 170, 150);
+    hand = handXs(5, 62, 222).map(([x, y], i) => S.card([c(3, 9), c(5, 2), c(7, 1), c(7, 2), c(9, 4)][i], x, y, 62));
+    hand.filter(el => val(el.e) === 7).forEach(el => { el.style.top = "208px"; el.style.boxShadow = "0 0 0 3px #ffb547, 0 8px 18px rgba(0,0,0,.5)"; });
+    S.tell("Mira has a pair of 6s out. You've picked your two 7s.");
+  });
+}
+// ---------- 2. add a card ----------
+{
+  const S = Stage($("dAdd"), 300); let mira, comp, six, four, hand;
+  S.button("Add your 6 to Mira's pair", async () => {
+    const mine = hand.find(el => val(el.e) === 6);
+    S.tell("Your 6 joins Mira's pair…");
+    await S.go(mine, 72, 38, 50, 700, { arc: 40, ease: "cubic-bezier(.3,1.3,.5,1)" });
+    await sleep(300); S.tell("…making three 6s, which beats the computer's three 4s"); S.shake(four); await sleep(1000);
+    await Promise.all(four.map((el, i) => S.go(el, 186 + i * 46, 108, 54, 450, { ease: "cubic-bezier(.3,1.4,.5,1)" })));
+    S.tell("Back they go, turned over");
+    for (let i = 0; i < four.length; i++) { S.flip(four[i], `${val(four[i].e)} → ${other(four[i].e)}`, i); await sleep(200); }
+    await sleep(1600);
+    await Promise.all(four.map(el => S.go(el, 248, 10, 20, 450, { o1: 0 })));
+    comp.innerHTML = "Computer <em>· 8</em>"; S.pulse(comp, "+3");
+    S.tell("You shed a card, and the 6 now belongs to Mira's set: if it's beaten, she takes all three", "good");
+  }, () => {
+    S.clear();
+    mira = S.text("who", "Mira <em>· 6</em>", 82, 8); comp = S.text("who", "Computer <em>· 5</em>", 252, 8);
+    six = [S.card(c(6, 2), 24, 38, 50), S.card(c(6, 3), 48, 38, 50)];
+    four = [S.card(c(4, 2), 206, 38, 50), S.card(c(4, 2, 1), 230, 38, 50), S.card(c(4, 3), 254, 38, 50)];
+    hand = handXs(4, 62, 198).map(([x, y], i) => S.card([c(2, 10), c(6, 4), c(8, 5), c(9, 3)][i], x, y, 62));
+    S.tell("Mira has two 6s, the computer has three 4s, and you hold a 6.");
+  });
+}
+// ---------- 3. take a set ----------
+{
+  const S = Stage($("dTake"), 330); let ollie, set, hand;
+  S.button("Take Ollie's pair", async () => {
+    S.tell("You take Ollie's two 8s…");
+    await Promise.all(set.map((el, i) => S.go(el, 74 + i * 108, 90, 86, 650, { ease: "cubic-bezier(.3,1.2,.5,1)" })));
+    ollie.innerHTML = "Ollie <em>· 5 cards</em>";
+    await sleep(300); S.tell("…and every card turns over on its way to you");
+    for (let i = 0; i < set.length; i++) { await S.flip(set[i], `${val(set[i].e)} → ${other(set[i].e)}`); await sleep(350); }
+    await sleep(700);
+    const all = hand.concat(set).sort((a, b) => val(a.e) - val(b.e) || other(a.e) - other(b.e));
+    const xs = handXs(all.length, 62, 228);
+    await Promise.all(all.map((el, i) => S.go(el, xs[i][0], xs[i][1], 62, 650, set.includes(el) ? { arc: 20 } : {})));
+    all.forEach((el, i) => { el.style.zIndex = i + 1; });
+    set.forEach(el => el.animate([{ boxShadow: "0 0 0 3px #ffb547, 0 0 18px #ffb547" }, { boxShadow: "0 0 0 0 #ffb547" }], { duration: 1600 }));
+    S.tell("They land as a 1 and a 5: now you've got three 5s ready to play", "good");
+  }, () => {
+    S.clear();
+    ollie = S.text("who", "Ollie <em>· 5 cards</em>", 170, 8);
+    set = [S.card(c(8, 1), 136, 38, 52), S.card(c(8, 5), 164, 38, 52)];
+    hand = handXs(4, 62, 228).map(([x, y], i) => S.card([c(2, 7), c(4, 6), c(5, 3), c(5, 7)][i], x, y, 62));
+    hand.forEach((el, i) => { el.style.zIndex = i + 1; });
+    S.tell("Ollie has a pair of 8s out. Look at their white boxes: 1 and 5.");
+  });
+}
+// ---------- 4. flip your hand ----------
+{
+  const S = Stage($("dFlip"), 190); let hand;
+  S.button("Flip your hand", async () => {
+    S.tell("Every card turns over…");
+    await Promise.all(hand.map((el, i) => sleep(i * 90).then(async () => {
+      el.style.zIndex = 10 + i;
+      if (!reduce) await el.animate([{ transform: "rotate(0)" }, { transform: "rotate(180deg)" }], { duration: 550, easing: "ease-in-out" }).finished;
+      el.style.transform = "rotate(180deg)"; el.e ^= 1;
+      const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;transform:rotate(180deg);opacity:0"; d.innerHTML = cardSVG(el.e); el.appendChild(d);
+      if (!reduce) await d.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 500, easing: "ease-out", fill: "forwards" }).finished; d.style.opacity = 1;
+    })));
+    S.tell("…your new numbers…"); await sleep(1000);
+    const sorted = hand.slice().sort((a, b) => val(a.e) - val(b.e) || other(a.e) - other(b.e)), xs = handXs(sorted.length, 66, 40);
+    sorted.forEach((el, i) => { el.style.zIndex = 10 + i; });
+    await Promise.all(sorted.map((el, i) => S.go(el, xs[i][0], xs[i][1], 66, 600, { t0: "rotate(180deg)", t1: "rotate(180deg)", ease: "cubic-bezier(.3,0,.2,1)" })));
+    S.tell("…sorted into order. A messy hand became three 8s and a pair of 5s", "good");
+  }, () => {
+    S.clear();
+    hand = handXs(6, 66, 40).map(([x, y], i) => S.card([c(1, 8), c(2, 5), c(3, 8), c(4, 5), c(2, 8), c(6, 7)][i], x, y, 66));
+    hand.forEach((el, i) => { el.style.transformOrigin = "50% 50%"; el.style.zIndex = i + 1; });
+    S.tell("Not much to play here… but look at the white boxes.");
+  });
+}
+// ---------- clashes: pick a set to play ----------
+{
+  const host = $("dClash");
+  const table = [{ who: "Ollie", cs: [c(8, 1)] }, { who: "Mira", cs: [c(6, 2), c(6, 3)] }, { who: "Computer", cs: [c(4, 2), c(4, 2, 1), c(4, 3)] }];
+  const S = Stage(host, 150);
+  table.forEach((t, i) => { const x = 60 + i * 110; S.text("who", t.who, x, 8); t.cs.forEach((e, j) => S.card(e, x - 24 - (t.cs.length - 1) * 11 + j * 22, 40, 48)); });
+  S.ctrl.remove(); S.say.remove();
+  const picks = [[9, 1], [5, 1], [7, 2], [3, 2], [5, 3], [2, 4]];
+  host.insertAdjacentHTML("beforeend", `<div class="chips" role="group" aria-label="Pick a set to play">${picks.map(([v, n], i) => `<button class="chip" data-i="${i}">${n === 1 ? "a single " + v : n === 2 ? "a pair of " + v + "s" : n === 3 ? "three " + v + "s" : "four " + v + "s"}</button>`).join("")}</div><div class="verdict" id="clashV">Pick a set above</div>`);
+  host.querySelectorAll(".chip").forEach(b => b.onclick = () => {
+    host.querySelectorAll(".chip").forEach(x => x.classList.toggle("on", x === b));
+    const [v, n] = picks[+b.dataset.i], t = table.find(t => t.cs.length === n), V = $("clashV");
+    if (!t) { V.className = "verdict ok"; V.textContent = `Nobody has a set of ${n} out, so it goes down safely, whatever the number.`; }
+    else if (v > val(t.cs[0])) { V.className = "verdict good"; V.textContent = `Beats ${t.who}'s ${n === 1 ? "single " + val(t.cs[0]) : val(t.cs[0]) + "s"}: ${t.who} takes ${n === 1 ? "it" : "them"} back, turned over.`; }
+    else { V.className = "verdict bad"; V.textContent = `Can't: ${t.who} already has ${n === 1 ? "a single " + val(t.cs[0]) : n === 2 ? "a pair of " + val(t.cs[0]) + "s" : "three " + val(t.cs[0]) + "s"}, so it would need to be higher than ${val(t.cs[0])}.`; }
+  });
+}
+// ---------- your set is cleared ----------
+{
+  const S = Stage($("dDisc"), 170); let set, pile, pn, lab;
+  S.button("Your turn comes round", async () => {
+    S.tell("Nobody beat or took your 5s, so they're cleared away"); lab.remove();
+    await Promise.all(set.map((el, i) => sleep(i * 120).then(() => S.go(el, 30, 40, 52, 650, { arc: 20, t1: `rotate(${i % 2 ? -8 : 7}deg)` }).then(() => { el.className = "fc back"; el.innerHTML = ""; }))));
+    pn.textContent = "2 discarded"; S.pulse(pn, "+2");
+    S.tell("Two fewer cards for you, and now you take your turn as normal", "good");
+  }, () => {
+    S.clear();
+    pile = S.card(0, 30, 40, 52, true); pile.style.opacity = 0.25;
+    pn = S.text("spot", "0 discarded", 56, 122);
+    set = [S.card(c(5, 2), 160, 40, 56), S.card(c(5, 4), 186, 40, 56)];
+    lab = S.text("spot", "Your set", 200, 132);
+    S.tell("You played a pair of 5s last turn, and the play has come all the way round.");
+  });
+}
+// ---------- going out ----------
+{
+  const S = Stage($("dOut"), 270); let last, toks;
+  S.button("Play your last card", async () => {
+    await S.go(last, 144, 90, 56, 700, { arc: 40, ease: "cubic-bezier(.3,1.3,.5,1)" });
+    const b = S.text("ban", "You're out first!", 170, 70);
+    if (!reduce) b.animate([{ opacity: 0, transform: "translate(-50%,-50%) scale(.5)" }, { opacity: 1, transform: "translate(-50%,-50%) scale(1.08)", offset: 0.3 }, { opacity: 1, transform: "translate(-50%,-50%) scale(1)" }], { duration: 700, fill: "both" });
+    for (let i = 0; i < 2; i++) { await sleep(450); const t = toks.children[i]; t.classList.add("got"); t.animate([{ transform: "scale(0) rotate(-180deg)" }, { transform: "scale(1.25)" }, { transform: "scale(1)" }], { duration: 500 }); }
+    await sleep(600); b.remove();
+    last.style.boxShadow = "0 0 0 2px #ffb547, 0 0 14px #ffb547";
+    S.tell("F and L are yours. Your 7 glows: it stays until your turn would come round. The next player out takes one letter and ends the round.", "good");
+  }, () => {
+    S.clear();
+    toks = S.text("toks", "<span class='tok'>F</span><span class='tok'>L</span><span class='tok'>I</span><span class='tok'>P</span>", 170, 14);
+    last = S.card(c(7, 6), 144, 186, 56);
+    S.tell("No single is out, so your last card, a 7, can go down.");
+  });
+}
+// ---------- the deck ----------
+{
+  let n = 4;
+  const draw = () => {
+    $("pc").innerHTML = [3, 4, 5].map(k => `<button class="chip ${k === n ? "on" : ""}" data-n="${k}">${k} players</button>`).join("");
+    const used = DECK.filter(d => d.g <= n - 2).length;
+    $("deckInfo").textContent = `${n} players: ${used} cards, ${used / n} each`;
+    $("deckGrid").innerHTML = DECK.slice().sort((x, y) => x.a - y.a || x.b - y.b).map(d => cardHTML(d.k * 2, d.g > n - 2 ? "out" : "")).join("");
+  };
+  $("pc").onclick = e => { const b = e.target.closest("[data-n]"); if (b) { n = +b.dataset.n; draw(); } };
+  $("deckGrid").onclick = async e => { const el = e.target.closest(".fc"); if (!el) return; const k = +el.dataset.k, cur = el.dataset.f === "1" ? 1 : 0;
+    if (!reduce) await el.animate([{ transform: "rotate(0)" }, { transform: "rotate(180deg)" }], { duration: 450, easing: "ease-in-out" }).finished;
+    el.dataset.f = cur ? "0" : "1"; el.innerHTML = cardSVG(k * 2 + (cur ? 0 : 1)); };
+  draw();
+}
+// ---------- bigger screenshots ----------
+document.querySelectorAll(".shot img").forEach(img => img.onclick = () => { const lb = $("lightbox"); lb.querySelector("img").src = img.src; lb.querySelector("img").alt = img.alt; lb.classList.add("on"); });
+$("lightbox").onclick = () => $("lightbox").classList.remove("on");
+document.addEventListener("keydown", e => { if (e.key === "Escape") $("lightbox").classList.remove("on"); });
+}
+</script>
+</body>
+</html>
