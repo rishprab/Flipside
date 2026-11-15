@@ -396,7 +396,7 @@ const serverNow = () => Date.now() + clockOffset;
 const reduceMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // ---------- the deck ----------
-const APP_VERSION = 3; // bump when uploading a new version; devices with an older cached copy are asked to refresh
+const APP_VERSION = 4; // bump when uploading a new version; devices with an older cached copy are asked to refresh
 // [low, high, group]: group 0 = always in, 1 = joins at 3 players, 2 = joins at 4, 3 = joins at 5
 const DECK = [[1,10,1],[1,9,2],[1,8,2],[1,7,0],[1,6,0],[1,5,0],[2,4,0],[2,10,0],[1,9,0],[1,8,0],[1,7,0],[1,6,0],[2,5,0],[2,4,0],
   [3,10,3],[2,9,0],[2,8,1],[2,7,2],[2,6,2],[2,5,0],[3,4,0],[3,9,0],[3,8,0],[3,7,0],[2,6,0],[3,5,2],[3,4,2],
@@ -1300,8 +1300,16 @@ function seatBox(V, id) { const el = seatEl(V, id); return el ? box(el) : { x: i
 const smallAt = r => ({ x: r.x + r.w / 2 - 12, y: r.y + Math.min(r.h / 2, 30) - 18, w: 24 });
 const centreEl = V => V.kind === "phone" ? $("arena") : $("tvCenter");
 function say(V, t) { const el = V.kind === "phone" ? $("status") : $("tvSay"); el.innerHTML = t; if (V.kind === "phone") el.classList.remove("mine"); el.animate([{ opacity: 0, transform: "translateY(5px)" }, { opacity: 1, transform: "none" }], { duration: 280 }); }
+// the player who starts gets a soft glow round their seat (or round your hand)
+function seatGlow(V, id) {
+  const el = seatEl(V, id); if (!el || reduceMotion) return;
+  el.animate([{ boxShadow: "0 0 0 0 rgba(255,181,71,0)" }, { boxShadow: "0 0 0 3px rgba(255,181,71,0.95), 0 0 26px rgba(255,181,71,0.65)", offset: 0.35 }, { boxShadow: "0 0 0 3px rgba(255,181,71,0.95), 0 0 26px rgba(255,181,71,0.65)", offset: 0.65 }, { boxShadow: "0 0 0 0 rgba(255,181,71,0)" }], { duration: 1600 });
+}
 function pulse(el, t) {
-  if (!el) return; el.animate([{ transform: "scale(1)" }, { transform: "scale(1.3)" }, { transform: "scale(1)" }], { duration: 500 });
+  if (!el) return;
+  // keep whatever positioning transform the element already has (seats are centred with translate), and grow on top of it
+  const base = getComputedStyle(el).transform, b0 = base && base !== "none" ? base + " " : "";
+  el.animate([{ transform: b0 + "scale(1)" }, { transform: b0 + "scale(1.3)" }, { transform: b0 + "scale(1)" }], { duration: 500 });
   if (t) { const r = box(el), f = document.createElement("div"); f.className = "float"; f.textContent = t; f.style.left = r.x + r.w / 2 + "px"; f.style.top = r.y + "px"; $("fx").appendChild(f); f.animate([{ opacity: 1, transform: "translate(-50%,0)" }, { opacity: 0, transform: "translate(-50%,-26px)" }], { duration: 1100 }).finished.then(() => f.remove()); }
 }
 function shake(V, cs) { cs.forEach(e => { const el = cardEl(V, e >> 1); if (!el) return; el.animate([{ transform: "none" }, { transform: "translateX(-4px) rotate(-4deg)" }, { transform: "translateX(4px) rotate(4deg)" }, { transform: "translateX(-3px)" }, { transform: "none" }], { duration: 450 }); el.animate([{ filter: "drop-shadow(0 0 0 #ff6b6b)" }, { filter: "drop-shadow(0 0 8px #ff6b6b)" }, { filter: "drop-shadow(0 0 0 #ff6b6b)" }], { duration: 900 }); }); }
@@ -1523,7 +1531,7 @@ async function animDeal(V, ev) {
   await Promise.all(jobs); deck.remove();
   const star = W.star;
   W0.counts = W.counts; W0.turn = W.turn; drawTable(V, W0);
-  if (star) { say(V, `${whoV(V, star)} ${star === V.me ? "have" : "has"} the ★ card, so ${star === V.me ? "you start" : "they start"}`); pulse(seatEl(V, star)); }
+  if (star) { say(V, `${whoV(V, star)} ${star === V.me ? "have" : "has"} the ★ card, so ${star === V.me ? "you start" : "they start"}`); seatGlow(V, star); }
   await wait(V, 1300);
 }
 
