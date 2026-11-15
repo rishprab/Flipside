@@ -130,7 +130,12 @@
   .ladder span b { color: var(--ink); }
   .hurry { font-size: 0.7rem; font-weight: 800; color: var(--muted); opacity: 0; transition: opacity 0.3s; pointer-events: none; }
   .hurry.on { opacity: 1; }
-  .verdict { height: 26px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.82rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); padding: 0 6px; }
+  .verdict { height: 38px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.82rem; font-weight: 800; line-height: 1.2; white-space: nowrap; overflow: hidden; color: var(--muted); padding: 0 6px; }
+  .verdict > div { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .verdict.pv { color: var(--ink); } .verdict .l2 { font-size: 0.78rem; } .verdict .ok { color: var(--good); } .verdict .no { color: var(--bad); }
+  .handwrap.preview .hcard .fc { box-shadow: 0 0 0 2px rgba(255,181,71,0.6), 0 5px 12px rgba(0,0,0,0.45); filter: saturate(0.9); }
+  .pvtag { position: absolute; left: 50%; top: 2px; transform: translateX(-50%); z-index: 300; background: var(--acc); color: #2a1a08; font: 700 12px Fredoka, sans-serif; letter-spacing: 0.08em; padding: 2px 10px; border-radius: 999px; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .handwrap.preview .pvtag { opacity: 1; }
   .verdict.good { color: var(--good); } .verdict.bad { color: var(--bad); }
   .handwrap { position: relative; isolation: isolate; touch-action: none; user-select: none; -webkit-user-select: none; outline: none; }
   .handwrap:focus-visible { box-shadow: inset 0 0 0 2px var(--acc); border-radius: 14px; }
@@ -303,7 +308,7 @@
     <div class="opps" id="opps"></div>
   </div>
   <div class="verdict" id="verdict"></div>
-  <div class="handwrap" id="handZone" tabindex="0" aria-label="Your hand. Slide along it to browse; lift to pick a card. Arrow keys move, Space picks, Enter plays."><div class="hand" id="hand"></div></div>
+  <div class="handwrap" id="handZone" tabindex="0" aria-label="Your hand. Slide along it to browse; lift to pick a card. Arrow keys move, Space picks, Enter plays."><span class="pvtag" aria-hidden="true">PREVIEW</span><div class="hand" id="hand"></div></div>
   <div class="runs" id="runs"></div>
   <div class="playbar"><button class="btn ghost" id="flipBtn">Flip hand</button><button class="btn" id="playBtn" disabled>Play</button></div>
 </div>
@@ -391,7 +396,7 @@ const serverNow = () => Date.now() + clockOffset;
 const reduceMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // ---------- the deck ----------
-const APP_VERSION = 2; // bump when uploading a new version; devices with an older cached copy are asked to refresh
+const APP_VERSION = 3; // bump when uploading a new version; devices with an older cached copy are asked to refresh
 // [low, high, group]: group 0 = always in, 1 = joins at 3 players, 2 = joins at 4, 3 = joins at 5
 const DECK = [[1,10,1],[1,9,2],[1,8,2],[1,7,0],[1,6,0],[1,5,0],[2,4,0],[2,10,0],[1,9,0],[1,8,0],[1,7,0],[1,6,0],[2,5,0],[2,4,0],
   [3,10,3],[2,9,0],[2,8,1],[2,7,2],[2,6,2],[2,5,0],[3,4,0],[3,9,0],[3,8,0],[3,7,0],[2,6,0],[3,5,2],[3,4,2],
@@ -860,7 +865,10 @@ function nextRound() { if (room.state.phase !== "roundEnd") return; closeSheet()
 function backToLobby() { if (!isHost) { if (isLead() && room.state.phase === "gameOver") sendCmd("again"); return; } closeSheet(); roomRef.update({ scores: null, evs: null, moves: null, state: { phase: "lobby", seq: (room.state.seq || 0) + 1, at: TS } }); Object.keys(players()).forEach(id => R(`${code}/hands/${id}`).remove()); }
 
 // ---------- PHONE: render ----------
-let sel = [], handView = [], pending = null, pendingAt = 0, flipArm = 0, wasMyTurn = false;
+let sel = [], handView = [], pending = null, pendingAt = 0, wasMyTurn = false;
+// flip preview: your hand shown turned over, just on this phone, until you confirm or cancel
+let preview = false, pvBusy = false;
+const shownHand = () => preview ? handView.map(e => e ^ 1) : handView;
 const poss = id => id === uid ? "your" : esc(rawName(id)) + "'s";
 function render() {
   if (!room || !room.state) return;
@@ -870,6 +878,7 @@ function render() {
   if (pending != null && !(room.moves || {})[uid] && Date.now() - pendingAt > 1500) { pending = null; toast("That move isn't allowed right now"); }
   if (s.phase === "lobby") { show("vLobby"); if ($("sheetHost").dataset.kind === "scores") closeSheet(); presReset(viewFor("phone")); wasMyTurn = false; return renderLobby(); }
   show("vGame");
+  if (preview && s.phase !== "play" && !pvBusy) endPreviewNow();
   $("gRound").textContent = `Round ${s.round || 1}`;
   const V = viewFor("phone"); syncPres(V);
   if (!V.busy) { drawPhone(V.shown); renderHand(); }
@@ -921,7 +930,7 @@ function phoneCt(n) {
 function drawPhone(W) {
   if (!W) return;
   const o = order(), me = o.indexOf(uid), others = o.slice(me + 1).concat(o.slice(0, Math.max(0, me)));
-  const act = canAct();
+  const act = canAct() && !preview;
   const A = $("arena"), AW = A.clientWidth || 360, AH = A.clientHeight || 380, n = others.length;
   // seats in turn order, starting on your left and going round the far side of the table
   // seats along the far side of the table, each with its own strip of table so nothing overlaps
@@ -988,7 +997,7 @@ function sizeHandZone() { $("handZone").style.paddingTop = "26px"; } // the magn
 function haptic(strong) { if (isTV) return; try { if (typeof navigator.vibrate === "function") navigator.vibrate(strong ? 18 : 7); else $("hapLab").click(); } catch (e) {} }
 function renderHand(opt) {
   if (!room || !room.state || room.state.phase === "lobby") return;
-  const h = $("hand"), cards = sortHand(handView);
+  const h = $("hand"), cards = sortHand(shownHand());
   const W = h.clientWidth || 360, cw = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--cw")) || 80;
   const key = cards.join(",") + "|" + W + "|" + cw;
   if (h.dataset.key !== key) {
@@ -1015,9 +1024,9 @@ function paintSel() {
     return `<button class="run ${on ? "on" : ""}" style="left:${(x0 + 4).toFixed(0)}px;width:${(x1 - x0 - 8).toFixed(0)}px" onclick="pickRun('${ids.join(",")}')">all ${b - a + 1}</button>`; }).join("");
   startHandLoop(); paintControls();
 }
-function pickRun(list) { const ids = list.split(",").map(Number); sel = ids.every(e => sel.includes(e)) ? [] : ids; haptic(false); paintSel(); }
+function pickRun(list) { if (preview) return; const ids = list.split(",").map(Number); sel = ids.every(e => sel.includes(e)) ? [] : ids; haptic(false); paintSel(); }
 function toggleSel(e) {
-  if (e == null) return;
+  if (e == null || preview) return;
   if (sel.includes(e)) sel = sel.filter(x => x !== e);
   else if (sel.length && val(sel[0]) === val(e)) sel.push(e);
   else sel = [e];
@@ -1051,7 +1060,7 @@ zoneEl.addEventListener("keydown", e => {
   if (!HZ.cards.length) return;
   if (e.key === "ArrowRight" || e.key === "ArrowLeft") { e.preventDefault(); HZ.kb = true; HZ.fi = Math.max(0, Math.min(HZ.cards.length - 1, HZ.fi + (e.key === "ArrowRight" ? 1 : -1))); HZ.target = HZ.fi; if (HZ.focus == null) HZ.focus = HZ.fi; startHandLoop(); }
   else if (e.key === " ") { e.preventDefault(); toggleSel(HZ.cards[HZ.fi]); }
-  else if (e.key === "Enter") { e.preventDefault(); playSel(); }
+  else if (e.key === "Enter") { e.preventDefault(); if (!preview) playSel(); }
   else if (e.key === "Escape") { sel = []; HZ.kb = false; paintSel(); }
 });
 zoneEl.addEventListener("blur", () => { HZ.kb = false; startHandLoop(); });
@@ -1063,7 +1072,7 @@ function canAct() {
 }
 async function submitMove(mv) {
   if (!canAct()) return;
-  pending = room.state.seq; pendingAt = Date.now(); flipArm = 0; closeSheet();
+  pending = room.state.seq; pendingAt = Date.now(); closeSheet();
   paintControls(); drawPhone(VIEWS.phone.shown);
   await R(`${code}/pub/moves/${uid}`).set(Object.assign({ seq: room.state.seq }, mv));
 }
@@ -1072,24 +1081,51 @@ function playSel() {
   const chk = playCheck(VIEWS.phone.shown.sets, uid, sel); if (!chk.ok) return;
   haptic(true); submitMove({ a: "play", cards: sel.slice() });
 }
-$("playBtn").onclick = playSel;
-$("flipBtn").onclick = () => {
-  if (!canAct()) return;
-  if (flipArm && Date.now() - flipArm < 2600) { haptic(true); return submitMove({ a: "flip" }); }
-  flipArm = Date.now(); paintControls(); setTimeout(paintControls, 2700);
-};
+$("playBtn").onclick = () => { if (!preview) return playSel(); if (!canAct() || pvBusy) return; haptic(true); submitMove({ a: "flip" }); };
+$("flipBtn").onclick = () => setPreview(!preview);
+const canPreview = () => { const s = room && room.state, V = VIEWS.phone; return !!s && s.phase === "play" && !!V && !(V.shown && V.shown.out.includes(uid)) && handView.length > 0 && pending == null; };
+async function setPreview(on) {
+  if (pvBusy || on === preview || (on && !canPreview())) return;
+  pvBusy = true; sel = []; if (on) haptic(false); paintControls();
+  try { await handFlip({ gen: 0, sp: 1, kind: "phone", me: uid, pv: true }, () => { preview = on; $("handZone").classList.toggle("preview", on); }, on ? 600 : 250); }
+  finally { pvBusy = false; paintControls(); }
+}
+// drop the preview at once, without animating, when a move is about to change your hand
+function endPreviewNow() { if (!preview) return; preview = false; $("handZone").classList.remove("preview"); renderHand({ still: true }); paintControls(); }
+const WORDN = ["", "a single", "a pair of", "three", "four", "five", "six", "seven", "eight"];
+function previewSummary(W) {
+  const h = shownHand(), g = {}; h.forEach(e => { g[val(e)] = (g[val(e)] || 0) + 1; });
+  const groups = Object.entries(g).map(([v, n]) => [+v, n]).sort((a, b) => b[1] - a[1] || b[0] - a[0]);
+  const big = groups.filter(([v, n]) => n > 1), singles = groups.filter(([v, n]) => n === 1).map(([v]) => v).sort((a, b) => a - b);
+  const parts = big.map(([v, n]) => `${WORDN[n]} ${v}s`); if (singles.length) parts.push(singles.length > 1 ? "singles " + singles.join("·") : "a single " + singles[0]);
+  const best = big[0] || groups.sort((a, b) => b[0] - a[0])[0];
+  let l2 = "";
+  if (best) {
+    const lead = room.state.turn === uid ? "Next turn" : "On your turn", clash = clashFor(W.sets || {}, best[1], uid);
+    l2 = clash ? (best[0] > val(W.sets[clash][0]) ? `<span class="ok">${lead}, your ${best[0]}s would beat ${poss(clash)} ${val(W.sets[clash][0])}s</span>` : `<span class="no">${lead}, your ${best[0]}s wouldn't beat ${poss(clash)} ${val(W.sets[clash][0])}s</span>`)
+      : `<span class="ok">${lead}, your ${best[1] > 1 ? best[0] + "s" : best[0]} would go down safely</span>`;
+  }
+  return `<div>Flipped: ${parts.join(", ")}</div><div class="l2">${l2}</div>`;
+}
 function paintControls() {
   if (!room || !room.state || isTV) return;
   const s = room.state, V = VIEWS.phone, my = canAct(), W = (V && V.shown) || { sets: {}, out: [], turn: null };
   const pb = $("playBtn"), fb = $("flipBtn"), vd = $("verdict");
   const meOut = (W.out || []).includes(uid);
-  const armed = flipArm && Date.now() - flipArm < 2600;
-  fb.disabled = !my; fb.textContent = armed && my ? "Tap again" : "Flip hand"; fb.classList.toggle("arm", !!(armed && my));
+  if (preview) {
+    fb.disabled = pvBusy; fb.textContent = "Cancel";
+    pb.textContent = my ? "Flip for real" : pending != null ? "…" : "Flip on your turn"; pb.disabled = !my || pvBusy;
+    vd.className = "verdict pv"; vd.innerHTML = pvBusy ? "" : previewSummary(W);
+    document.querySelectorAll("#opps .opp").forEach(t => { t.classList.remove("tap"); t.onclick = null; });
+    return;
+  }
+  fb.disabled = pvBusy || !canPreview() || meOut; fb.textContent = "Flip hand";
   let text = "", cls = ""; pb.disabled = true; pb.textContent = "Play";
   if (s.phase !== "play") text = "";
   else if (meOut) text = "You're out! Watch the rest of the round";
   else if (pending != null) text = "…";
-  else if (!sel.length) text = my ? (armed ? "Flipping turns every card in your hand over" : "Pick cards to play, tap a glowing set, or flip") : (V && (V.busy || V.q.length)) ? "" : W.turn ? `Waiting for ${esc(rawName(W.turn))}…` : "";
+  else if (pvBusy) text = "";
+  else if (!sel.length) text = my ? "Pick cards to play, tap a glowing set, or flip" : (V && (V.busy || V.q.length)) ? "" : W.turn ? `<div>Waiting for ${esc(rawName(W.turn))}…</div><div class="l2">Tap Flip hand to preview your hand turned over</div>` : "";
   else {
     const chk = playCheck(W.sets, uid, sel), v = val(sel[0]);
     pb.textContent = `Play ${sel.length} × ${v}`;
@@ -1204,7 +1240,7 @@ function runPres(V) {
   hurryShow(V, true);
   runEv(V, ev).catch(e => { if (e !== "stop") console.error(e); }).then(() => {
     if (V.gen !== g) return;
-    $("fx").innerHTML = "";
+    $("fx").querySelectorAll(":scope > :not(.pv)").forEach(n => n.remove());
     V.shown = ev.after; V.seq = ev.seq; V.busy = false;
     drawV(V, V.shown);
     runPres(V);
@@ -1295,6 +1331,10 @@ function burst(x, y) {
 
 // ---------- each kind of action ----------
 async function runEv(V, ev) {
+  if (V.kind === "phone") {
+    while (pvBusy) await wait(V, 50);
+    if (ev.k === "deal" || (ev.p === V.me && ev.k !== "flip") || (ev.bounce && ev.bounce.o === V.me)) endPreviewNow();
+  }
   if (ev.k === "deal") return animDeal(V, ev);
   const W = clone(V.shown);
   W.out = arr(W.out); W.sets = W.sets || {}; W.counts = W.counts || {}; W.scores = W.scores || {};
@@ -1381,17 +1421,22 @@ async function animTake(V, W, ev) {
 async function animFlip(V, W, ev) {
   const p = ev.p;
   say(V, `${whoV(V, p)} ${sv(V, p, "flip")} ${p === V.me ? "your" : "their"} hand`);
-  if (p === V.me) return handFlip(V);
+  if (p === V.me) {
+    if (!preview) return handFlip(V, () => { handView = handView.map(e => e ^ 1); }, 1000);
+    handView = handView.map(e => e ^ 1); preview = false; $("handZone").classList.remove("preview"); renderHand({ still: true }); sfx("flip");
+    HZ.els.forEach((b, i) => b.firstElementChild.animate([{ boxShadow: "0 0 0 2px rgba(255,181,71,.6)" }, { boxShadow: "0 0 0 3px #ffd27a, 0 0 24px 6px rgba(255,210,122,.8)", offset: 0.4 }, { boxShadow: "0 5px 12px rgba(0,0,0,.45)" }], { duration: 900, delay: i * 40 }));
+    return wait(V, 1000);
+  }
   const el = countEl(V, p); sfx("flip");
   if (el && !reduceMotion) el.animate([{ transform: "rotateX(0)", color: "" }, { transform: "rotateX(180deg) scale(1.2)", color: "#ffb547", offset: 0.5 }, { transform: "rotateX(360deg)", color: "" }], { duration: 900 });
   const s = seatEl(V, p); if (s && !reduceMotion) s.animate([{ boxShadow: "0 0 0 0 rgba(255,181,71,0)" }, { boxShadow: "0 0 0 3px rgba(255,181,71,0.9), 0 0 24px rgba(255,181,71,0.6)", offset: 0.5 }, { boxShadow: "0 0 0 0 rgba(255,181,71,0)" }], { duration: 1200 });
   await wait(V, 1500);
 }
 // your own hand: each card turns over in a wave, its new face fades in, a pause, then the hand re-sorts
-async function handFlip(V) {
+async function handFlip(V, apply, hold) {
   const cards = HZ.cards.slice(), fr = HZ.els.map(el => box(el.firstElementChild));
-  const gs = cards.map((e, i) => { const g = ghost(fr[i], cardSVG(e)); g.style.zIndex = 10 + i; g.style.transformOrigin = "50% 50%"; return g; });
-  handView = handView.map(e => e ^ 1); sel = []; renderHand({ still: true }); HZ.els.forEach(el => { el.style.visibility = "hidden"; });
+  const gs = cards.map((e, i) => { const g = ghost(fr[i], cardSVG(e)); g.style.zIndex = 10 + i; g.style.transformOrigin = "50% 50%"; if (V.pv) g.classList.add("pv"); return g; });
+  apply(); sel = []; renderHand({ still: true }); HZ.els.forEach(el => { el.style.visibility = "hidden"; });
   const nc = cards.map(e => e ^ 1), to = nc.map(e => { const t = cardEl(V, e >> 1); return t ? box(t) : fr[0]; });
   const rank = to.map(t => to.filter(u => u.x < t.x).length);
   sfx("flip");
@@ -1402,7 +1447,7 @@ async function handFlip(V) {
     if (!reduceMotion) await d.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 500 * V.sp, easing: "ease-out", fill: "forwards" }).finished;
     d.style.opacity = 1;
   })));
-  await wait(V, 1000);
+  await wait(V, hold);
   gs.forEach((g, i) => { g.style.zIndex = 10 + rank[i]; });
   await Promise.all(gs.map((g, i) => go(V, g, to[i], 600, { t0: "rotate(180deg)", t1: "rotate(180deg)", ease: "cubic-bezier(.3,0,.2,1)" })));
   HZ.els.forEach(el => { el.style.visibility = ""; }); gs.forEach(g => g.remove());
