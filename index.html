@@ -158,6 +158,20 @@
   .feelrow output { color: var(--acc); font-weight: 800; text-align: right; }
   .hapsw { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
   body.tvmode .ladder { display: none; }
+  /* with a TV the table lives on the TV, so the phone keeps only a slim strip of rivals and gives the rest to your hand */
+  body.tvmode { --cw: 112px; }
+  body.tvmode .arena { flex: 0 0 auto !important; display: flex; flex-direction: column; gap: 6px; background: none; border: 0; box-shadow: none; border-radius: 0; margin: 2px 0 0; }
+  body.tvmode .tmid { position: static; transform: none; width: auto; }
+  body.tvmode .pile, body.tvmode .myset { display: none; }
+  body.tvmode .opps { position: static; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; pointer-events: auto; }
+  body.tvmode .opp { position: relative; transform: none; flex-direction: row; align-items: center; justify-content: space-between; gap: 6px; padding: 5px 8px; min-width: 0; }
+  body.tvmode .opp .cl { display: flex; flex-direction: column; min-width: 0; }
+  body.tvmode .opp .ct, body.tvmode .opp .outb { min-height: 0; }
+  body.tvmode .oset { min-height: 54px; margin: 0; align-items: center; flex: 0 0 auto; }
+  body.tvmode .oset .fc { --w: 36px; margin-left: -16px; border-radius: 4px; }
+  body.tvmode .oset .none { color: var(--muted); font-size: 0.72rem; font-weight: 700; }
+  body.tvmode .verdict { margin-top: auto; }
+  .tvend { position: absolute; right: 2vw; top: calc(2vh + 52px); z-index: 3; }
 
   /* sheets */
   .sheet { position: fixed; inset: 0; z-index: 60; background: rgba(12,6,18,0.8); display: flex; align-items: flex-end; justify-content: center; padding: 12px; animation: fade 0.2s both; }
@@ -241,6 +255,8 @@
   @media (max-height: 700px) { :root { --cw: 76px; } }
   .opps:has(.opp:nth-child(4)) .botb { display: none; }
   @media (max-height: 620px) { :root { --cw: 60px; } }
+  @media (max-height: 760px) { body.tvmode { --cw: 96px; } body.tvmode .oset { min-height: 44px; } body.tvmode .oset .fc { --w: 29px; margin-left: -13px; } }
+  @media (max-height: 680px) { body.tvmode { --cw: 84px; } }
 </style>
 </head>
 <body>
@@ -316,6 +332,7 @@
 <!-- TV LOBBY -->
 <div class="view hidden" id="vTVLobby">
   <button class="pill mutebtn tvmute" onclick="toggleMute()">Sound on</button>
+  <button class="pill tvend" onclick="confirmLeave()">Close room</button>
   <div class="tvlobby">
     <div class="tvl-left">
       <h1 class="logo tvlogo">FLIP<span class="fl">S</span>IDE</h1>
@@ -339,7 +356,7 @@
 
 <!-- TV GAME -->
 <div class="view hidden" id="vTVGame">
-  <div class="tvtop"><span class="t1">FLIPSIDE</span><span class="t2" id="tvRound"></span><span class="sp"></span><span class="t2">Room <b id="tvCode2"></b></span><button class="pill mutebtn" onclick="toggleMute()">Sound on</button></div>
+  <div class="tvtop"><span class="t1">FLIPSIDE</span><span class="t2" id="tvRound"></span><span class="sp"></span><span class="t2">Room <b id="tvCode2"></b></span><button class="pill mutebtn" onclick="toggleMute()">Sound on</button><button class="pill" onclick="confirmLeave()">End game</button></div>
   <div class="tvtable" id="tvTable">
     <div class="oval"></div>
     <div id="tvSeats"></div>
@@ -396,7 +413,7 @@ const serverNow = () => Date.now() + clockOffset;
 const reduceMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // ---------- the deck ----------
-const APP_VERSION = 4; // bump when uploading a new version; devices with an older cached copy are asked to refresh
+const APP_VERSION = 5; // bump when uploading a new version; devices with an older cached copy are asked to refresh
 // [low, high, group]: group 0 = always in, 1 = joins at 3 players, 2 = joins at 4, 3 = joins at 5
 const DECK = [[1,10,1],[1,9,2],[1,8,2],[1,7,0],[1,6,0],[1,5,0],[2,4,0],[2,10,0],[1,9,0],[1,8,0],[1,7,0],[1,6,0],[2,5,0],[2,4,0],
   [3,10,3],[2,9,0],[2,8,1],[2,7,2],[2,6,2],[2,5,0],[3,4,0],[3,9,0],[3,8,0],[3,7,0],[2,6,0],[3,5,2],[3,4,2],
@@ -599,7 +616,7 @@ $("leaveBtn").onclick = () => leaveRoom(false);
 async function leaveGame() {
   if (!room || !code) return;
   const c = code, inLobby = room.state && room.state.phase === "lobby";
-  if (inLobby) return leaveRoom(false);
+  if (inLobby && !(isHost && room.tv)) return leaveRoom(false);
   if (isHost) await endGameFor(c, Object.keys(players()));
   else await R(`${c}/pub/players/${uid}`).update({ bot: true, left: true, online: true });
   leaveRoom(true); toast(isHost ? "Game ended" : "You left the game. A computer has your hand.");
@@ -621,9 +638,10 @@ async function leaveFromHome(c, host) {
   toast(host ? "Game ended" : "You've left that game");
 }
 function confirmLeave() {
-  const endsIt = isHost && !room.tv;
-  openSheet("leave", `<h2>Leave this game?</h2><div class="sub">${endsIt ? "You started this game, so leaving ends it for everyone." : "A computer player will take over your hand so the others can keep playing."}</div>
-    <div class="stack"><button class="btn" onclick="leaveGame()">${endsIt ? "End the game and leave" : "Leave the game"}</button><button class="btn ghost" onclick="closeSheet()">Stay</button></div>`, true);
+  const endsIt = isHost, tvLobby = isTV && room.state && room.state.phase === "lobby";
+  const sub = isTV ? `This ${tvLobby ? "closes the room" : "ends the game"} for everyone and sends every player back to the start screen.` : endsIt ? "You started this game, so leaving ends it for everyone." : "A computer player will take over your hand so the others can keep playing.";
+  openSheet("leave", `<h2>${isTV ? (tvLobby ? "Close this room?" : "End this game?") : "Leave this game?"}</h2><div class="sub">${sub}</div>
+    <div class="stack"><button class="btn" onclick="leaveGame()">${isTV ? (tvLobby ? "Close the room" : "End the game for everyone") : endsIt ? "End the game and leave" : "Leave the game"}</button><button class="btn ghost" onclick="closeSheet()">${isTV ? "Keep playing" : "Stay"}</button></div>`, true);
 }
 function needUpdate() {
   if ($("updBox")) return;
@@ -932,6 +950,7 @@ function drawPhone(W) {
   const o = order(), me = o.indexOf(uid), others = o.slice(me + 1).concat(o.slice(0, Math.max(0, me)));
   const act = canAct() && !preview;
   const A = $("arena"), AW = A.clientWidth || 360, AH = A.clientHeight || 380, n = others.length;
+  if (room.tv) { drawStrip(W, others, act); return drawMine(W); }
   // seats in turn order, starting on your left and going round the far side of the table
   // seats along the far side of the table, each with its own strip of table so nothing overlaps
   // seats along the far side of the table, each with its own strip so nothing overlaps;
@@ -955,6 +974,20 @@ function drawPhone(W) {
       ${p.online === false && !p.bot ? '<span class="off">AWAY</span>' : ""}
       <div class="oset">${k ? cs.map(e => cardHTML(e, isOut ? "prot" : "")).join("") : '<span class="empty"></span>'}</div></div>`;
   }).join("");
+  drawMine(W);
+}
+function drawStrip(W, others, act) {
+  $("arena").classList.remove("sides");
+  $("opps").innerHTML = others.map(id => {
+    const p = players()[id] || {}, cs = W.sets[id] || [], isOut = W.out.includes(id), place = W.out.indexOf(id), tap = act && cs.length && !isOut;
+    return `<div class="opp ${W.turn === id ? "turn" : ""} ${isOut ? "isout" : ""} ${tap ? "tap" : ""}" data-seat="${id}" ${tap ? `onclick="openSetSheet('${id}')" role="button" aria-label="${esc(p.name)}'s set: add to it or take it"` : ""}>
+      <div class="cl"><div class="nm"><span class="dot" style="background:${p.color || "#8EC4F7"}"></span>${esc(p.name)}</div>
+      ${isOut ? `<div class="outb">Out ${place === 0 ? "first" : "second"}!</div>` : `<div class="ct"><b>${W.counts[id] || 0}</b> cards${W.turn === id ? ' <span class="tleft"></span>' : ""}</div>`}</div>
+      ${p.online === false && !p.bot ? '<span class="off">AWAY</span>' : ""}
+      <div class="oset">${cs.length ? cs.map(e => cardHTML(e, isOut ? "prot" : "")).join("") : '<span class="none">no set</span>'}</div></div>`;
+  }).join("");
+}
+function drawMine(W) {
   const mine = W.sets[uid] || [];
   $("mySet").innerHTML = mine.map(e => cardHTML(e, W.out.includes(uid) ? "prot" : "")).join("");
   $("myLab").textContent = mine.length ? "Your set" : "";
@@ -1066,9 +1099,12 @@ zoneEl.addEventListener("keydown", e => {
 zoneEl.addEventListener("blur", () => { HZ.kb = false; startHandLoop(); });
 
 // ---------- PHONE: actions ----------
+// with a TV, wait until the TV has finished showing the last move before your turn opens, so the table never falls behind
+const tableCatchingUp = () => !!(room && room.tv && room.state && serverNow() < (room.state.turnAt || 0) - 250);
+setInterval(() => { if (!isTV && room && room.tv && room.state && room.state.turn === uid && room.state.phase === "play") paintControls(); }, 400);
 function canAct() {
   const s = room && room.state, V = VIEWS.phone;
-  return !!s && s.phase === "play" && s.turn === uid && !!V && !V.busy && !V.q.length && V.seq === s.seq && pending == null;
+  return !!s && s.phase === "play" && s.turn === uid && !!V && !V.busy && !V.q.length && V.seq === s.seq && pending == null && !tableCatchingUp();
 }
 async function submitMove(mv) {
   if (!canAct()) return;
@@ -1125,6 +1161,7 @@ function paintControls() {
   else if (meOut) text = "You're out! Watch the rest of the round";
   else if (pending != null) text = "…";
   else if (pvBusy) text = "";
+  else if (s.turn === uid && tableCatchingUp() && !sel.length) text = "Your turn is next: watch the table…";
   else if (!sel.length) text = my ? "Pick cards to play, tap a glowing set, or flip" : (V && (V.busy || V.q.length)) ? "" : W.turn ? `<div>Waiting for ${esc(rawName(W.turn))}…</div><div class="l2">Tap Flip hand to preview your hand turned over</div>` : "";
   else {
     const chk = playCheck(W.sets, uid, sel), v = val(sel[0]);
@@ -1344,6 +1381,7 @@ async function runEv(V, ev) {
     if (ev.k === "deal" || (ev.p === V.me && ev.k !== "flip") || (ev.bounce && ev.bounce.o === V.me)) endPreviewNow();
   }
   if (ev.k === "deal") return animDeal(V, ev);
+  if (V.kind === "phone" && room.tv) return runLite(V, ev);
   const W = clone(V.shown);
   W.out = arr(W.out); W.sets = W.sets || {}; W.counts = W.counts || {}; W.scores = W.scores || {};
   const p = ev.p;
@@ -1355,6 +1393,45 @@ async function runEv(V, ev) {
   for (const o of ev.outs) await animOut(V, W, o);
   for (const d of ev.disc) await animDisc(V, W, d);
   if (ev.end) { say(V, ""); await banner(V, ev.end === "game" ? "Game over!" : "Round over!", false, 1600); }
+}
+// a phone next to a TV: brief, hand-only animations, with the strip of rivals kept up to date
+async function runLite(V, ev) {
+  const W = clone(V.shown); W.out = arr(W.out); W.sets = W.sets || {}; W.counts = W.counts || {}; W.scores = W.scores || {};
+  const p = ev.p, me = V.me;
+  const intoHand = async cs => {
+    const ks = new Set(cs.map(e => e >> 1)); handView = handView.filter(e => !ks.has(e >> 1)).concat(cs.map(e => e ^ 1)); renderHand();
+    cs.forEach((e, i) => { const el = cardEl(V, e >> 1); if (el && !reduceMotion) el.animate([{ transform: "translateY(-80px)", opacity: 0, boxShadow: "0 0 0 3px #ffb547, 0 0 18px #ffb547" }, { transform: "none", opacity: 1, boxShadow: "0 0 0 3px #ffb547, 0 0 18px #ffb547", offset: 0.55 }, { transform: "none", opacity: 1, boxShadow: "0 5px 12px rgba(0,0,0,.45)" }], { duration: 1000 * V.sp, delay: i * 100, fill: "backwards" }); });
+    sfx("snap"); await wait(V, 1000 + cs.length * 100);
+  };
+  if (ev.k === "play" || ev.k === "add") {
+    const owner = ev.k === "play" ? p : ev.to;
+    say(V, ev.k === "play" ? `${whoV(V, p)} ${sv(V, p, "play")} ${aSet(ev.cards)}` : `${whoV(V, p)} ${sv(V, p, "add")} a ${val(ev.cards[0])} to ${possV(V, ev.to)} set`);
+    if (p === me) {
+      const fr = ev.cards.map(e => { const el = cardEl(V, e >> 1); return el ? box(el) : null; });
+      const ks = new Set(ev.cards.map(e => e >> 1)); handView = handView.filter(e => !ks.has(e >> 1)); sel = []; renderHand();
+      const gs = ev.cards.map((e, i) => fr[i] ? ghost(fr[i], cardSVG(e)) : null);
+      sfx("snap");
+      await Promise.all(gs.map((g, i) => g ? wait(V, i * 90).then(() => go(V, g, { x: fr[i].x, y: fr[i].y - 170, w: fr[i].w }, 650, { o1: 0, ease: "cubic-bezier(.4,0,.6,1)" })).then(() => g.remove()) : null));
+    }
+    W.sets[owner] = (W.sets[owner] || []).concat(ev.cards); W.counts[p] = Math.max(0, (W.counts[p] || 0) - ev.cards.length); drawPhone(W);
+    if (owner !== me) pulse((seatEl(V, owner) || {}).querySelector ? seatEl(V, owner).querySelector(".oset") : null);
+    await wait(V, 600);
+  } else if (ev.k === "take") {
+    say(V, `${whoV(V, p)} ${sv(V, p, "take")} ${possV(V, ev.to)} ${setName(ev.cards)}`);
+    delete W.sets[ev.to];
+    if (p === me) { drawPhone(W); await intoHand(ev.cards); W.counts[p] = (W.counts[p] || 0) + ev.cards.length; }
+    else { W.counts[p] = (W.counts[p] || 0) + ev.cards.length; drawPhone(W); pulse(countEl(V, p), "+" + ev.cards.length); await wait(V, 800); }
+  } else if (ev.k === "flip") await animFlip(V, W, ev);
+  if (ev.bounce) {
+    const b = ev.bounce; say(V, `That beats ${possV(V, b.o)} ${setName(b.cards)}`); delete W.sets[b.o];
+    if (b.gone) { W.disc += b.cards.length; drawPhone(W); await wait(V, 700); }
+    else if (b.o === me) { drawPhone(W); await intoHand(b.cards); W.counts[b.o] = (W.counts[b.o] || 0) + b.cards.length; }
+    else { W.counts[b.o] = (W.counts[b.o] || 0) + b.cards.length; drawPhone(W); pulse(countEl(V, b.o), "+" + b.cards.length); await wait(V, 800); }
+  }
+  for (const o of ev.outs) await animOut(V, W, o);
+  for (const d of ev.disc) { delete W.sets[d.p]; W.disc = (W.disc || 0) + d.cards.length; }
+  drawPhone(W);
+  if (ev.end) { say(V, ""); await banner(V, ev.end === "game" ? "Game over!" : "Round over!", false, 1400); }
 }
 async function toSet(V, W, p, cards, owner) {
   const fr = cards.map(e => { const el = p === V.me ? cardEl(V, e >> 1) : null; return el ? box(el) : smallAt(seatBox(V, p)); });
